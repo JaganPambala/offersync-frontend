@@ -1,28 +1,38 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, EyeOff, MessageCircle, Users, TrendingUp } from 'lucide-react'
-
+import { useSelector, useDispatch } from "react-redux";
+import { setLoginField, setAuthenticated } from "../../redux/slices/authSlice";
+import { navigationLinks } from '../../utils/constants';
+import { useLoginMutation } from '../../redux/api/authApiSlice';
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const dispatch = useDispatch();
 
-  const handleSubmit = () => {
-    e.preventDefault()
-    setIsLoading(true)
-  }
+  const { email, password } = useSelector((state) => state.auth.login);
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated); 
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleInputChange = () => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
-  
+  const [login, { isLoading,}] = useLoginMutation();
+
+  const handleSubmit = async (e) => {
+
+    e.preventDefault();
+
+    try {
+      const result = await login({ email, password }).unwrap();
+      dispatch(setAuthenticated({ isAuthenticated: true, user: result.user }));
+      // Optionally redirect here
+    } catch (err) {
+      alert(err?.data?.message || "Login failed");
+    }
+
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    dispatch(setLoginField({ field: name, value }));
+  };
 
   const features = [
     {
@@ -40,7 +50,7 @@ const Login = () => {
       title: 'Success Analytics',
       description: 'Track your hiring performance and collaboration metrics'
     }
-  ]
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex">
@@ -59,7 +69,7 @@ const Login = () => {
             </h2>
             <p className="mt-2 text-sm text-gray-600">
               Or{' '}
-              <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
+              <Link to={navigationLinks.register.path} className="font-medium text-primary-600 hover:text-primary-500">
                 create a new account
               </Link>
             </p>
@@ -78,7 +88,7 @@ const Login = () => {
                     type="email"
                     autoComplete="email"
                     required
-                    value={formData.email}
+                    value={email}
                     onChange={handleInputChange}
                     placeholder="priya@techcorpa.com"
                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
@@ -97,7 +107,7 @@ const Login = () => {
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
                     required
-                    value={formData.password}
+                    value={password}
                     onChange={handleInputChange}
                     className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   />
@@ -139,7 +149,7 @@ const Login = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
                 >
                   {isLoading ? (
                     <>
@@ -199,4 +209,4 @@ const Login = () => {
   )
 }
 
-export default Login 
+export default Login

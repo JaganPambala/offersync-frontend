@@ -1,61 +1,54 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, EyeOff, Building, MapPin, Phone } from 'lucide-react'
+import { useSelector, useDispatch } from "react-redux";
+import { setSignupField, setAuthenticated } from "../../redux/slices/authSlice";
+import { useSignupMutation } from '../../redux/api/authApiSlice';
+
+import { navigationLinks } from '../../utils/constants';
 
 const Register= () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    whatsappNumber: '',
-    companyName: '',
-    companyDomain: '',
-    industry: '',
-    companySize: '',
-    city: '',
-    state: '',
-    role: ''
-  })
+
+  const dispatch = useDispatch();
+  const signup = useSelector((state) => state.auth.signup);
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit =  () => {
-    e.preventDefault()
-    if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match')
-      return
-    }
-    
-    setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      alert('Registration successful! Please check your email for verification.')
-    }, 2000)
+  const [signupMutation, { isLoading, error, data }] = useSignupMutation();
+
+  const handleSubmit = async (e) => {
+   e.preventDefault();
+  if (signup.password !== signup.confirmPassword) {
+    alert('Passwords do not match');
+    return;
   }
 
-  const handleInputChange = () => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
+  try {
+    const result = await signupMutation(signup).unwrap();
+    console.log(result);
+    dispatch(setAuthenticated({ isAuthenticated: true, user: result.user }));
+    // Optionally redirect here
+  } catch (err) {
+    alert(err?.data?.message || "Signup failed");
+  }
   }
 
-  const industries = [
-    'Technology', 'Healthcare', 'Finance', 'Education', 'Manufacturing',
-    'Retail', 'Consulting', 'Media', 'Government', 'Other'
-  ]
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    dispatch(setSignupField({ field: name, value }));
+  }
+
+  // const industries = [
+  //   'Technology', 'Healthcare', 'Finance', 'Education', 'Manufacturing',
+  //   'Retail', 'Consulting', 'Media', 'Government', 'Other'
+  // ]
 
   const companySizes = [
-    'Startup (1-10)', 'Small (11-50)', 'Medium (51-200)', 
-    'Large (201-1000)', 'Enterprise (1000+)'
+   'Startup', "Small", "Medium", "Large"
   ]
 
   const hrRoles = [
-    'HR Manager', 'Senior HR', 'HR Director', 'Head of HR', 
-    'Talent Acquisition', 'Recruiter', 'HR Business Partner'
+    "HR Executive", "Senior HR", "HR Manager", "HR Director"
   ]
 
   return (
@@ -73,7 +66,7 @@ const Register= () => {
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Already have an account?{' '}
-            <Link to="/login" className="font-medium text-primary-600 hover:text-primary-500">
+            <Link to={navigationLinks.login.path} className="font-medium text-primary-600 hover:text-primary-500">
               Sign in here
             </Link>
           </p>
@@ -94,7 +87,7 @@ const Register= () => {
                     id="name"
                     name="name"
                     required
-                    value={formData.name}
+                    value={signup.name}
                     onChange={handleInputChange}
                     placeholder="Priya Sharma"
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
@@ -110,7 +103,7 @@ const Register= () => {
                     id="email"
                     name="email"
                     required
-                    value={formData.email}
+                    value={signup.email}
                     onChange={handleInputChange}
                     placeholder="priya@techcorpa.com"
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
@@ -127,7 +120,7 @@ const Register= () => {
                       id="password"
                       name="password"
                       required
-                      value={formData.password}
+                      value={signup.password}
                       onChange={handleInputChange}
                       className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm pr-10"
                     />
@@ -155,7 +148,7 @@ const Register= () => {
                       id="confirmPassword"
                       name="confirmPassword"
                       required
-                      value={formData.confirmPassword}
+                      value={signup.confirmPassword}
                       onChange={handleInputChange}
                       className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm pr-10"
                     />
@@ -182,7 +175,7 @@ const Register= () => {
                     id="whatsappNumber"
                     name="whatsappNumber"
                     required
-                    value={formData.whatsappNumber}
+                    value={signup.whatsappNumber}
                     onChange={handleInputChange}
                     placeholder="+91-9876543210"
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
@@ -197,7 +190,7 @@ const Register= () => {
                     id="role"
                     name="role"
                     required
-                    value={formData.role}
+                    value={signup.role}
                     onChange={handleInputChange}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   >
@@ -223,7 +216,7 @@ const Register= () => {
                     id="companyName"
                     name="companyName"
                     required
-                    value={formData.companyName}
+                    value={signup.companyName}
                     onChange={handleInputChange}
                     placeholder="TechCorpA"
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
@@ -231,21 +224,21 @@ const Register= () => {
                 </div>
 
                 <div>
-                  <label htmlFor="companyDomain" className="block text-sm font-medium text-gray-700">
-                    Company Domain
+                  <label htmlFor="industry" className="block text-sm font-medium text-gray-700">
+                    Industry *
                   </label>
                   <input
                     type="text"
-                    id="companyDomain"
-                    name="companyDomain"
-                    value={formData.companyDomain}
+                    id="industry"
+                    name="industry"
+                    value={signup.industry}
                     onChange={handleInputChange}
-                    placeholder="techcorpa.com"
+                    placeholder="Technology"
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   />
                 </div>
 
-                <div>
+                {/* <div>
                   <label htmlFor="industry" className="block text-sm font-medium text-gray-700">
                     Industry *
                   </label>
@@ -262,7 +255,7 @@ const Register= () => {
                       <option key={industry} value={industry}>{industry}</option>
                     ))}
                   </select>
-                </div>
+                </div> */}
 
                 <div>
                   <label htmlFor="companySize" className="block text-sm font-medium text-gray-700">
@@ -272,7 +265,7 @@ const Register= () => {
                     id="companySize"
                     name="companySize"
                     required
-                    value={formData.companySize}
+                    value={signup.companySize}
                     onChange={handleInputChange}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   >
@@ -292,7 +285,7 @@ const Register= () => {
                     id="city"
                     name="city"
                     required
-                    value={formData.city}
+                    value={signup.city}
                     onChange={handleInputChange}
                     placeholder="Bangalore"
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
@@ -308,7 +301,7 @@ const Register= () => {
                     id="state"
                     name="state"
                     required
-                    value={formData.state}
+                    value={signup.state}
                     onChange={handleInputChange}
                     placeholder="Karnataka"
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
@@ -342,7 +335,7 @@ const Register= () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
               >
                 {isLoading ? (
                   <>
@@ -361,4 +354,4 @@ const Register= () => {
   )
 }
 
-export default Register 
+export default Register

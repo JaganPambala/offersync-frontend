@@ -5,11 +5,11 @@ export const navigationLinks = {
     },
     login: {
         name: "Login",
-        path: "/login"
+        path: "/auth/login"
     },
     register: {
         name: "Register",
-        path: "/register"
+        path: "/auth/register"
     },
     dashboard: {
         name: "Dashboard",
@@ -29,7 +29,7 @@ export const navigationLinks = {
     }
 }
 
-export const apiUrl = "http://localhost:3000/api"
+export const API_URL = "http://localhost:3000/api"
 
 
 
