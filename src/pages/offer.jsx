@@ -1,84 +1,129 @@
-import React, { useState } from 'react'
-import { 
-  FileText, 
-  Search, 
-  MessageCircle, 
-  Clock, 
-  CheckCircle, 
+import React, { useState } from "react";
+import {
+  FileText,
+  Search,
+  MessageCircle,
+  Clock,
+  CheckCircle,
   AlertTriangle,
   Calendar,
   ChevronDown,
-  ChevronUp
-} from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { useGetAllOffersQuery, useUpdateOfferMutation } from '../redux/api/offerApiSlice'
-import { navigationLinks } from '../utils/constants.js'
-import OfferEditModal from '../components/common/OfferEditModal'
+  ChevronUp,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+  useGetAllOffersQuery,
+  useUpdateOfferMutation,
+} from "../redux/api/offerApiSlice";
+import { navigationLinks } from "../utils/constants.js";
+import OfferEditModal from "../components/common/OfferEditModal";
+import { useCreateCommunicationMutation } from "../redux/api/communicationApiSlice.js";
 
 const Offers = () => {
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState('ALL')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [expandedCandidates, setExpandedCandidates] = useState({})
-  const [selectedOffer, setSelectedOffer] = useState(null)
-  
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [expandedCandidates, setExpandedCandidates] = useState({});
+  const [selectedOffer, setSelectedOffer] = useState(null);
+  const [createCommunication] = useCreateCommunicationMutation();
+
   const { data: response, isLoading, isError } = useGetAllOffersQuery();
+
   const [updateOffer] = useUpdateOfferMutation();
-  
+
   // Add detailed logging
   console.log("Raw API Response:", response);
-  
+
   // Safely handle the response data - ensure we're getting the data array from the response
   const candidatesData = response?.success ? response.data : [];
   console.log("Processed candidatesData:", candidatesData);
 
+  const candidateInfo = candidatesData[0]?.candidate || {};
+  const allOffers = candidatesData[0]?.offers || [];
+
+  const user = localStorage.getItem("user");
+  const loggedInHRId = user ? JSON.parse(user)._id : null;
+  console.log("Logged in HR ID:", loggedInHRId);
+
+  const initiatorOffer = allOffers.find(
+    (offer) => offer.hr.id === loggedInHRId
+  );
+  const recipientOffer = allOffers.find(
+    (offer) => offer.hr.id !== loggedInHRId
+  );
+
   // Toggle candidate expansion
   const toggleCandidate = (candidateId) => {
-    setExpandedCandidates(prev => ({
+    setExpandedCandidates((prev) => ({
       ...prev,
-      [candidateId]: !prev[candidateId]
-    }))
-  }
+      [candidateId]: !prev[candidateId],
+    }));
+  };
 
   // Filter candidates based on search and status
-  const filteredCandidates = candidatesData.filter(candidateData => {
+  const filteredCandidates = candidatesData.filter((candidateData) => {
     console.log("Filtering candidate:", candidateData);
-    const matchesSearch = searchTerm === '' || 
-      candidateData?.candidate?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    if (statusFilter === 'ALL') return matchesSearch
-    
-    return matchesSearch && candidateData?.offers?.some(offer => offer.status === statusFilter)
-  })
+    const matchesSearch =
+      searchTerm === "" ||
+      candidateData?.candidate?.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
+
+    if (statusFilter === "ALL") return matchesSearch;
+
+    return (
+      matchesSearch &&
+      candidateData?.offers?.some((offer) => offer.status === statusFilter)
+    );
+  });
 
   console.log("Filtered Candidates:", filteredCandidates);
 
   // Calculate stats based on all offers across all candidates
   const statsData = {
-    total: candidatesData.reduce((acc, curr) => acc + (curr?.offers?.length || 0), 0),
-    active: candidatesData.reduce((acc, curr) => 
-      acc + (curr?.offers?.filter(o => o.status === 'ACTIVE')?.length || 0), 0),
-    onHold: candidatesData.reduce((acc, curr) => 
-      acc + (curr?.offers?.filter(o => o.status === 'ON_HOLD')?.length || 0), 0),
-    accepted: candidatesData.reduce((acc, curr) => 
-      acc + (curr?.offers?.filter(o => o.status === 'ACCEPTED')?.length || 0), 0)
-  }
+    total: candidatesData.reduce(
+      (acc, curr) => acc + (curr?.offers?.length || 0),
+      0
+    ),
+    active: candidatesData.reduce(
+      (acc, curr) =>
+        acc + (curr?.offers?.filter((o) => o.status === "ACTIVE")?.length || 0),
+      0
+    ),
+    onHold: candidatesData.reduce(
+      (acc, curr) =>
+        acc +
+        (curr?.offers?.filter((o) => o.status === "ON_HOLD")?.length || 0),
+      0
+    ),
+    accepted: candidatesData.reduce(
+      (acc, curr) =>
+        acc +
+        (curr?.offers?.filter((o) => o.status === "ACCEPTED")?.length || 0),
+      0
+    ),
+  };
 
   console.log("Stats Data:", statsData);
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'ACTIVE': return 'bg-blue-100 text-blue-800'
-      case 'ACCEPTED': return 'bg-green-100 text-green-800'
-      case 'ON_HOLD': return 'bg-yellow-100 text-yellow-800'
-      case 'EXPIRED': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case "ACTIVE":
+        return "bg-blue-100 text-blue-800";
+      case "ACCEPTED":
+        return "bg-green-100 text-green-800";
+      case "ON_HOLD":
+        return "bg-yellow-100 text-yellow-800";
+      case "EXPIRED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const formatCurrency = (amount) => {
-    return `₹${(amount / 100000).toFixed(1)}L`
-  }
+    return `₹${(amount / 100000).toFixed(1)}L`;
+  };
 
   const handleCreateOffer = () => {
     navigate(navigationLinks.offerCreate.path);
@@ -93,23 +138,65 @@ const Offers = () => {
       await updateOffer(updatedData).unwrap();
       setSelectedOffer(null); // Close modal on success
     } catch (error) {
-      console.error('Failed to update offer:', error);
-      // You might want to show an error message to the user here
+      console.error("Failed to update offer:", error);
+      // You might want to show an error message to the user hereww
     }
   };
 
-  const generateWhatsAppLink = (candidateName) => {
-    const message = `Hi! I'd like to discuss the offers for ${candidateName}. Can we coordinate?`;
-    return `https://wa.me/?text=${encodeURIComponent(message)}`;
-  };
+  const handleInitiateAndOpenWhatsApp = async () => {
+    const whatsappPayload = {
+      initiatorHR: {
+        _id: initiatorOffer.hr.id,
+        name: initiatorOffer.hr.name,
+        whatsapp: initiatorOffer.hr.whatsapp,
+        company: initiatorOffer.hr.company,
+      },
+      recipientHR: {
+        _id: recipientOffer.hr.id,
+        name: recipientOffer.hr.name,
+        whatsapp: recipientOffer.hr.whatsapp,
+        company: recipientOffer.hr.company,
+      },
+      candidate: {
+        _id: candidateInfo.id,
+        name: candidateInfo.name,
+      },
+      offers: [
+        {
+          _id: initiatorOffer.id,
+          position: initiatorOffer.position,
+          company: initiatorOffer.hr.company,
+          hr: {
+            _id: initiatorOffer.hr.id,
+            name: initiatorOffer.hr.name,
+          },
+        },
+        {
+          _id: recipientOffer.id,
+          position: recipientOffer.position,
+          company: recipientOffer.hr.company,
+          hr: {
+            _id: recipientOffer.hr.id,
+            name: recipientOffer.hr.name,
+          },
+        },
+      ],
+    };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
+    try {
+      const response = await createCommunication(whatsappPayload).unwrap();
+      console.log("Communication created:", response);
+      if (response?.data?.whatsappLink) {
+        window.open(response.data.whatsappLink, "_blank");
+      } else {
+        // Optionally show a notification: WhatsApp link not found
+        alert("WhatsApp link not found in response.");
+      }
+    } catch (error) {
+      console.error("Failed to create communication:", error);
+      alert("Failed to initiate WhatsApp communication.");
+    }
+  };
 
   if (isError) {
     return (
@@ -124,16 +211,15 @@ const Offers = () => {
       {/* Header */}
       <div className="md:flex md:items-center md:justify-between">
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900">Offers Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Offers Management
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
             Track and manage all your job offers in one place
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
-          <button 
-            className="btn-primary"
-            onClick={handleCreateOffer}
-          >
+          <button className="btn-primary" onClick={handleCreateOffer}>
             <FileText className="h-4 w-4 mr-2" />
             Create Offer
           </button>
@@ -155,7 +241,7 @@ const Offers = () => {
               />
             </div>
           </div>
-          
+
           <div className="flex gap-2">
             <select
               value={statusFilter}
@@ -179,8 +265,12 @@ const Offers = () => {
             <FileText className="h-8 w-8 text-blue-600" />
             <div className="ml-5">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Total Offers</dt>
-                <dd className="text-lg font-medium text-gray-900">{statsData.total}</dd>
+                <dt className="text-sm font-medium text-gray-500 truncate">
+                  Total Offers
+                </dt>
+                <dd className="text-lg font-medium text-gray-900">
+                  {statsData.total}
+                </dd>
               </dl>
             </div>
           </div>
@@ -191,7 +281,9 @@ const Offers = () => {
             <Clock className="h-8 w-8 text-yellow-600" />
             <div className="ml-5">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">On Hold</dt>
+                <dt className="text-sm font-medium text-gray-500 truncate">
+                  On Hold
+                </dt>
                 <dd className="text-lg font-medium text-gray-900">
                   {statsData.onHold}
                 </dd>
@@ -205,7 +297,9 @@ const Offers = () => {
             <CheckCircle className="h-8 w-8 text-green-600" />
             <div className="ml-5">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Accepted</dt>
+                <dt className="text-sm font-medium text-gray-500 truncate">
+                  Accepted
+                </dt>
                 <dd className="text-lg font-medium text-gray-900">
                   {statsData.accepted}
                 </dd>
@@ -219,7 +313,9 @@ const Offers = () => {
             <AlertTriangle className="h-8 w-8 text-blue-600" />
             <div className="ml-5">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Active</dt>
+                <dt className="text-sm font-medium text-gray-500 truncate">
+                  Active
+                </dt>
                 <dd className="text-lg font-medium text-gray-900">
                   {statsData.active}
                 </dd>
@@ -256,14 +352,17 @@ const Offers = () => {
                   <tr className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <button 
-                          onClick={() => toggleCandidate(candidateData.candidate.id)}
+                        <button
+                          onClick={() =>
+                            toggleCandidate(candidateData.candidate.id)
+                          }
                           className="mr-2 focus:outline-none"
                         >
-                          {expandedCandidates[candidateData.candidate.id] ? 
-                            <ChevronUp className="h-4 w-4" /> : 
+                          {expandedCandidates[candidateData.candidate.id] ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
                             <ChevronDown className="h-4 w-4" />
-                          }
+                          )}
                         </button>
                         <div>
                           <div className="text-sm font-medium text-gray-900">
@@ -285,17 +384,23 @@ const Offers = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         {candidateData.offers.length > 1 && (
-                          <a
-                            href={generateWhatsAppLink(candidateData.candidate.name)}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={() =>
+                              handleInitiateAndOpenWhatsApp(
+                                candidateData.candidate.name
+                              )
+                            }
                             className="text-green-600 hover:text-green-800"
                           >
                             <MessageCircle className="h-5 w-5" />
-                          </a>
+                          </button>
                         )}
                         <button
-                          onClick={() => navigate(`/offers/${candidateData.candidate.id}/manage`)}
+                          onClick={() =>
+                            navigate(
+                              `/offers/${candidateData.candidate.id}/manage`
+                            )
+                          }
                           className="text-primary-600 hover:text-primary-900 text-sm font-medium"
                         >
                           Manage Offers
@@ -310,8 +415,8 @@ const Offers = () => {
                       <td colSpan="4" className="px-6 py-4 bg-gray-50">
                         <div className="space-y-4">
                           {candidateData.offers.map((offer) => (
-                            <div 
-                              key={offer.id} 
+                            <div
+                              key={offer.id}
                               className="bg-white p-4 rounded-lg shadow border border-gray-200"
                             >
                               <div className="flex justify-between items-start">
@@ -323,7 +428,11 @@ const Offers = () => {
                                     <span className="text-xs text-gray-500">
                                       ({offer.position.level})
                                     </span>
-                                    <span className={`badge ${getStatusColor(offer.status)}`}>
+                                    <span
+                                      className={`badge ${getStatusColor(
+                                        offer.status
+                                      )}`}
+                                    >
                                       {offer.status}
                                     </span>
                                   </div>
@@ -333,7 +442,10 @@ const Offers = () => {
                                     </span>
                                     <span className="flex items-center gap-1">
                                       <Calendar className="h-4 w-4" />
-                                      Valid till: {new Date(offer.timeline.validTill).toLocaleDateString()}
+                                      Valid till:{" "}
+                                      {new Date(
+                                        offer.timeline.validTill
+                                      ).toLocaleDateString()}
                                     </span>
                                   </div>
                                 </div>
@@ -362,11 +474,13 @@ const Offers = () => {
       {filteredCandidates.length === 0 && (
         <div className="text-center py-12">
           <FileText className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No candidates found</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            No candidates found
+          </h3>
           <p className="mt-1 text-sm text-gray-500">
-            {searchTerm || statusFilter !== 'ALL'
-              ? 'Try adjusting your search or filters.'
-              : 'Get started by creating a new offer.'}
+            {searchTerm || statusFilter !== "ALL"
+              ? "Try adjusting your search or filters."
+              : "Get started by creating a new offer."}
           </p>
         </div>
       )}
@@ -379,7 +493,7 @@ const Offers = () => {
         />
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Offers
+export default Offers;

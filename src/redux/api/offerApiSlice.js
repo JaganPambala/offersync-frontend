@@ -1,34 +1,34 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_URL } from '../../utils/constants';
-import { navigationLinks } from '../../utils/constants';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { API_URL } from "../../utils/constants";
+import { navigationLinks } from "../../utils/constants";
 
 export const offerApi = createApi({
-  reducerPath: 'offerApi',
+  reducerPath: "offerApi",
   baseQuery: fetchBaseQuery({
     baseUrl: API_URL,
     prepareHeaders: (headers, { getState }) => {
       // Set default headers
-      headers.set('Content-Type', 'application/json');
-      
+      headers.set("Content-Type", "application/json");
+
       // Try to get token from Redux state first
       const token = getState()?.auth?.token;
-      
+
       // Fallback to localStorage if not in Redux state
-      const localToken = localStorage.getItem('authToken');
-      
+      const localToken = localStorage.getItem("authToken");
+
       const finalToken = token || localToken;
-      
+
       console.log("Token from Redux:", token);
       console.log("Token from localStorage:", localToken);
       console.log("Final token being used:", finalToken);
-      
+
       if (finalToken) {
-        headers.set('Authorization', `Bearer ${finalToken}`);
+        headers.set("Authorization", `Bearer ${finalToken}`);
         console.log("Authorization header set:", `Bearer ${finalToken}`);
       } else {
         console.warn("No token found in Redux state or localStorage");
       }
-      
+
       return headers;
     },
   }),
@@ -38,7 +38,7 @@ export const offerApi = createApi({
         console.log("Creating offer with data:", data);
         return {
           url: navigationLinks.offerCreate.path,
-          method: 'POST',
+          method: "POST",
           body: data,
         };
       },
@@ -46,26 +46,26 @@ export const offerApi = createApi({
     createCompetitiveOffer: builder.mutation({
       query: ({ candidateId, data }) => ({
         url: `/candidate/${candidateId}/offer`,
-        method: 'POST',
+        method: "POST",
         body: {
           ...data,
-          isCompetitive: true
+          isCompetitive: true,
         },
       }),
-      invalidatesTags: ['Offers'],
+      invalidatesTags: ["Offers"],
     }),
     updateOffer: builder.mutation({
       query: ({ id, ...data }) => ({
-        url: `/offers/${id}`,
-        method: 'PATCH',
+        url: `/offers/${id}/status`,
+        method: "PATCH",
         body: data,
       }),
-      invalidatesTags: ['Offers'],
+      invalidatesTags: ["Offers"],
     }),
     getAllOffers: builder.query({
       query: () => ({
-        url: '/offers',
-        method: 'GET',
+        url: "/offers",
+        method: "GET",
       }),
       transformResponse: (response) => {
         console.log("Raw API response:", response);
@@ -79,11 +79,11 @@ export const offerApi = createApi({
             total: 0,
             page: 1,
             limit: 10,
-            pages: 0
-          }
+            pages: 0,
+          },
         };
       },
-      providesTags: ['Offers'],
+      providesTags: ["Offers"],
     }),
   }),
 });
@@ -93,4 +93,4 @@ export const {
   useCreateCompetitiveOfferMutation,
   useUpdateOfferMutation,
   useGetAllOffersQuery,
-} = offerApi; 
+} = offerApi;

@@ -1,62 +1,62 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_URL } from '../../utils/constants';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { API_URL } from "../../utils/constants";
 
 export const communicationApi = createApi({
-  reducerPath: 'communicationApi',
+  reducerPath: "communicationApi",
   baseQuery: fetchBaseQuery({
     baseUrl: API_URL,
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem("authToken");
       if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
+        headers.set("Authorization", `Bearer ${token}`);
       }
-      headers.set('Content-Type', 'application/json');
+      headers.set("Content-Type", "application/json");
       return headers;
     },
   }),
-  tagTypes: ['Communication'],
+  tagTypes: ["Communication"],
   endpoints: (builder) => ({
     // Get all communications
     getCommunications: builder.query({
-      query: () => '/communications',
-      providesTags: ['Communication']
+      query: () => "/communication",
+      providesTags: ["Communication"],
     }),
 
     // Get single communication
     getCommunicationById: builder.query({
       query: (id) => `/communications/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Communication', id }]
+      providesTags: (result, error, id) => [{ type: "Communication", id }],
     }),
 
     // Update communication outcome
     updateCommunicationOutcome: builder.mutation({
       query: ({ communicationId, outcomeData }) => ({
         url: `/communications/${communicationId}/outcome`,
-        method: 'PUT',
-        body: outcomeData
+        method: "PUT",
+        body: outcomeData,
       }),
       // Invalidate the cache to trigger a refetch
-      invalidatesTags: ['Communication']
+      invalidatesTags: ["Communication"],
     }),
 
     // Create new communication
     createCommunication: builder.mutation({
       query: (communicationData) => ({
-        url: '/communications',
-        method: 'POST',
-        body: communicationData
+        url: "/communication/initiate",
+        method: "POST",
+        body: communicationData,
       }),
-      invalidatesTags: ['Communication']
+      invalidatesTags: ["Communication"],
     }),
 
     // Get communications by candidate
     getCommunicationsByCandidate: builder.query({
       query: (candidateId) => `/communications/candidate/${candidateId}`,
       providesTags: (result, error, candidateId) => [
-        { type: 'Communication', id: `candidate-${candidateId}` }
-      ]
-    })
-  })
+        { type: "Communication", id: `candidate-${candidateId}` },
+      ],
+    }),
+  }),
 });
 
 // Export hooks for usage in components
@@ -65,5 +65,5 @@ export const {
   useGetCommunicationByIdQuery,
   useUpdateCommunicationOutcomeMutation,
   useCreateCommunicationMutation,
-  useGetCommunicationsByCandidateQuery
+  useGetCommunicationsByCandidateQuery,
 } = communicationApi;
