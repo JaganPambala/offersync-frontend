@@ -9,6 +9,8 @@ import Offers from "../pages/offer";
 import CandidateCheck from "../pages/CandidateCheck";
 import Communications from "../pages/Communication";
 import NotFound from "../pages/notFound"; // create this page
+import OfferCreate from "../pages/OfferCreate";
+import CompetitiveOfferCreate from '../pages/CompetitiveOfferCreate';
 
 // Layouts
 import MainLayout from "../layout/mainLayout";
@@ -44,8 +46,14 @@ const router = createBrowserRouter([
     children: [
       { path: navigationLinks.candidateCheck.path, element: <CandidateCheck /> },
       { path: navigationLinks.offers.path, element: <Offers /> },
+          { path: navigationLinks.offerCreate.path, element: <OfferCreate /> },
       { path: navigationLinks.communications.path, element: <Communications /> }
     ]
+  },
+
+  {
+    path: '/candidate/:id/offer',
+    element: <CompetitiveOfferCreate />
   },
 
   { path: "*", element: <NotFound /> }
@@ -56,3 +64,4 @@ const AppRoutes = () => {
 };
 
 export default AppRoutes;
+

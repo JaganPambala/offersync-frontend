@@ -17,11 +17,19 @@ export const navigationLinks = {
     },
     candidateCheck: {
         name: "Candidate Check",
-        path: "/candidates/check"
+        path: "/candidate/check"
     },
     offers: {
         name: "Offers",
         path: "/offers"
+    },
+    offerCreate: {
+        name: "Create Offer",
+        path: "/candidate/offers/create"
+    },
+    offerCreateCompetitive: {
+        name: "Create Competitive Offer",
+        path: "/candidate/:id/offer" // Updated to match backend endpoint pattern
     },
     communications: {
         name: "Communications",

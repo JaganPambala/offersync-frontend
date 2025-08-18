@@ -7,15 +7,16 @@ import {
   MessageCircle,
   X
 } from 'lucide-react'
+import { navigationLinks } from '../../utils/constants'
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, isMobile = false }) => {
   const location = useLocation()
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Candidate Check', href: '/candidates/check', icon: Users },
-    { name: 'Offers', href: '/offers', icon: FileText },
-    { name: 'Communications', href: '/communications', icon: MessageCircle },
+    { name: navigationLinks.dashboard.name, href: navigationLinks.dashboard.path, icon: LayoutDashboard },
+    { name: navigationLinks.candidateCheck.name, href: navigationLinks.candidateCheck.path, icon: Users },
+    { name: navigationLinks.offers.name, href: navigationLinks.offers.path, icon: FileText },
+    { name: navigationLinks.communications.name, href: navigationLinks.communications.path, icon: MessageCircle },
   ]
 
   const SidebarContent = () => (

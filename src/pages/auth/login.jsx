@@ -1,38 +1,120 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, EyeOff, MessageCircle, Users, TrendingUp } from 'lucide-react'
 import { useSelector, useDispatch } from "react-redux";
 import { setLoginField, setAuthenticated } from "../../redux/slices/authSlice";
 import { navigationLinks } from '../../utils/constants';
 import { useLoginMutation } from '../../redux/api/authApiSlice';
+import { useNavigate } from 'react-router-dom';
+import { validateField } from '../../utils/validation';
+import FormError from '../../components/common/FormError';
 
 const Login = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const { email, password } = useSelector((state) => state.auth.login);
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated); 
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Form validation state
+  const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
+  const [touched, setTouched] = useState({});
 
-  const [login, { isLoading,}] = useLoginMutation();
+  const [login, { isLoading }] = useLoginMutation();
 
-  const handleSubmit = async (e) => {
-
-    e.preventDefault();
-
-    try {
-      const result = await login({ email, password }).unwrap();
-      dispatch(setAuthenticated({ isAuthenticated: true, user: result.user }));
-      // Optionally redirect here
-    } catch (err) {
-      alert(err?.data?.message || "Login failed");
-    }
-
+  // Validate field on change
+  const validateFormField = (name, value) => {
+    const validation = validateField(name, value);
+    setErrors(prev => ({
+      ...prev,
+      [name]: validation.error
+    }));
+    return validation.isValid;
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     dispatch(setLoginField({ field: name, value }));
+    
+    // Validate if field has been touched
+    if (touched[name]) {
+      validateFormField(name, value);
+    }
   };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    validateFormField(name, value);
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    let isValid = true;
+
+    // Validate email
+    const emailValidation = validateField('email', email);
+    if (!emailValidation.isValid) {
+      newErrors.email = emailValidation.error;
+      isValid = false;
+    }
+
+    // Validate password
+    const passwordValidation = validateField('password', password);
+    if (!passwordValidation.isValid) {
+      newErrors.password = passwordValidation.error;
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormError('');
+
+    // Mark all fields as touched
+    setTouched({
+      email: true,
+      password: true
+    });
+
+    if (!validateForm()) {
+      setFormError('Please fix the errors before submitting.');
+      return;
+    }
+
+    try {
+      const result = await login({ email, password }).unwrap();
+      
+      // Store in localStorage
+      localStorage.setItem('authToken', result.token);
+      localStorage.setItem('user', JSON.stringify(result.data));
+      
+      // Store in Redux - include token
+      dispatch(setAuthenticated({ 
+        isAuthenticated: true, 
+        user: result.data,
+        token: result.token 
+      }));
+
+      // Navigate to dashboard
+      navigate(navigationLinks.home.path);
+    } catch (err) {
+      console.error("Login error:", err);
+      setFormError(err?.data?.message || "Login failed. Please check your credentials and try again.");
+    }
+  };
+
+  // Clear form error when inputs change
+  useEffect(() => {
+    if (formError) {
+      setFormError('');
+    }
+  }, [email, password]);
 
   const features = [
     {
@@ -76,6 +158,12 @@ const Login = () => {
           </div>
 
           <div className="mt-8">
+            {formError && (
+              <div className="mb-4 p-4 rounded-md bg-red-50 border border-red-200">
+                <FormError error={formError} />
+              </div>
+            )}
+
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -90,9 +178,13 @@ const Login = () => {
                     required
                     value={email}
                     onChange={handleInputChange}
+                    onBlur={handleBlur}
                     placeholder="priya@techcorpa.com"
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className={`appearance-none block w-full px-3 py-2 border ${
+                      errors.email ? 'border-red-300' : 'border-gray-300'
+                    } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm`}
                   />
+                  <FormError error={touched.email && errors.email} />
                 </div>
               </div>
 
@@ -109,7 +201,10 @@ const Login = () => {
                     required
                     value={password}
                     onChange={handleInputChange}
-                    className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    onBlur={handleBlur}
+                    className={`appearance-none block w-full px-3 py-2 pr-10 border ${
+                      errors.password ? 'border-red-300' : 'border-gray-300'
+                    } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm`}
                   />
                   <button
                     type="button"
@@ -122,6 +217,7 @@ const Login = () => {
                       <Eye className="h-4 w-4 text-gray-400" />
                     )}
                   </button>
+                  <FormError error={touched.password && errors.password} />
                 </div>
               </div>
 
@@ -206,7 +302,7 @@ const Login = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;

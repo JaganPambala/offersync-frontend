@@ -1,29 +1,37 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-
-const initialState = {
-  isAuthenticated: false,
-  user: null,
-  login: {
-    email: "",
-    password: "",
-    isLoading: false,
-  },
-  signup: {
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    whatsappNumber: '',
-    companyName: '',
-    industry: '',
-    companySize: '',
-    city: '',
-    state: '',
-    role: '',
-    isLoading: false,
-  },
+// Get initial auth state from localStorage
+const getInitialAuthState = () => {
+  const token = localStorage.getItem('authToken');
+  const user = localStorage.getItem('user');
+  
+  return {
+    isAuthenticated: !!token && !!user,
+    user: user ? JSON.parse(user) : null,
+    token: token || null,
+    login: {
+      email: "",
+      password: "",
+      isLoading: false,
+    },
+    signup: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      whatsappNumber: '',
+      companyName: '',
+      industry: '',
+      companySize: '',
+      city: '',
+      state: '',
+      role: '',
+      isLoading: false,
+    },
+  };
 };
+
+const initialState = getInitialAuthState();
 
 const authSlice = createSlice({
   name: "auth",
@@ -46,10 +54,12 @@ const authSlice = createSlice({
     setAuthenticated: (state, action) => {
       state.isAuthenticated = action.payload.isAuthenticated;
       state.user = action.payload.user || null;
+      state.token = action.payload.token || null;
     },
     logout: (state) => {
       state.isAuthenticated = false;
       state.user = null;
+      state.token = null;
       state.login = { email: "", password: "", isLoading: false };
       state.signup = {
         name: '',
@@ -65,10 +75,11 @@ const authSlice = createSlice({
         role: '',
         isLoading: false,
       };
+      // Clear localStorage
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
     },
   },
-    
-    
 });
 
 export const {

@@ -1,45 +1,77 @@
 import React, { useState } from 'react'
 import { 
   FileText, 
-  Filter, 
   Search, 
   MessageCircle, 
   Clock, 
   CheckCircle, 
   AlertTriangle,
-  ExternalLink,
-  Calendar
+  Calendar,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
-import { offersData } from '../data/sampleData.js'
+import { useNavigate } from 'react-router-dom'
+import { useGetAllOffersQuery, useUpdateOfferMutation } from '../redux/api/offerApiSlice'
+import { navigationLinks } from '../utils/constants.js'
+import OfferEditModal from '../components/common/OfferEditModal'
 
-const Offers= () => {
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards')
+const Offers = () => {
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [searchTerm, setSearchTerm] = useState('')
+  const [expandedCandidates, setExpandedCandidates] = useState({})
+  const [selectedOffer, setSelectedOffer] = useState(null)
+  
+  const { data: response, isLoading, isError } = useGetAllOffersQuery();
+  const [updateOffer] = useUpdateOfferMutation();
+  
+  // Add detailed logging
+  console.log("Raw API Response:", response);
+  
+  // Safely handle the response data - ensure we're getting the data array from the response
+  const candidatesData = response?.success ? response.data : [];
+  console.log("Processed candidatesData:", candidatesData);
 
-  const filteredOffers = offersData.filter(offer => {
-    const matchesStatus = statusFilter === 'ALL' || offer.status === statusFilter
+  // Toggle candidate expansion
+  const toggleCandidate = (candidateId) => {
+    setExpandedCandidates(prev => ({
+      ...prev,
+      [candidateId]: !prev[candidateId]
+    }))
+  }
+
+  // Filter candidates based on search and status
+  const filteredCandidates = candidatesData.filter(candidateData => {
+    console.log("Filtering candidate:", candidateData);
     const matchesSearch = searchTerm === '' || 
-      offer.candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      offer.position.title.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesStatus && matchesSearch
+      candidateData?.candidate?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    if (statusFilter === 'ALL') return matchesSearch
+    
+    return matchesSearch && candidateData?.offers?.some(offer => offer.status === statusFilter)
   })
+
+  console.log("Filtered Candidates:", filteredCandidates);
+
+  // Calculate stats based on all offers across all candidates
+  const statsData = {
+    total: candidatesData.reduce((acc, curr) => acc + (curr?.offers?.length || 0), 0),
+    active: candidatesData.reduce((acc, curr) => 
+      acc + (curr?.offers?.filter(o => o.status === 'ACTIVE')?.length || 0), 0),
+    onHold: candidatesData.reduce((acc, curr) => 
+      acc + (curr?.offers?.filter(o => o.status === 'ON_HOLD')?.length || 0), 0),
+    accepted: candidatesData.reduce((acc, curr) => 
+      acc + (curr?.offers?.filter(o => o.status === 'ACCEPTED')?.length || 0), 0)
+  }
+
+  console.log("Stats Data:", statsData);
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'ACTIVE': return 'bg-blue-100 text-blue-800'
       case 'ACCEPTED': return 'bg-green-100 text-green-800'
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800'
+      case 'ON_HOLD': return 'bg-yellow-100 text-yellow-800'
       case 'EXPIRED': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'HIGH': return 'bg-red-100 text-red-800'
-      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800'
-      case 'LOW': return 'bg-gray-100 text-gray-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -48,17 +80,43 @@ const Offers= () => {
     return `₹${(amount / 100000).toFixed(1)}L`
   }
 
-  const getDaysUntilExpiry = (dateString) => {
-    const today = new Date()
-    const expiryDate = new Date(dateString)
-    const diffTime = expiryDate.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    return diffDays
-  }
+  const handleCreateOffer = () => {
+    navigate(navigationLinks.offerCreate.path);
+  };
+
+  const handleEditOffer = (offer) => {
+    setSelectedOffer(offer);
+  };
+
+  const handleUpdateOffer = async (updatedData) => {
+    try {
+      await updateOffer(updatedData).unwrap();
+      setSelectedOffer(null); // Close modal on success
+    } catch (error) {
+      console.error('Failed to update offer:', error);
+      // You might want to show an error message to the user here
+    }
+  };
 
   const generateWhatsAppLink = (candidateName) => {
-    const message = `Hi! I'd like to discuss the offer for ${candidateName}. Can we coordinate?`
-    return `https://wa.me/?text=${encodeURIComponent(message)}`
+    const message = `Hi! I'd like to discuss the offers for ${candidateName}. Can we coordinate?`;
+    return `https://wa.me/?text=${encodeURIComponent(message)}`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="text-center text-red-500 p-4">
+        Error loading offers. Please try again later.
+      </div>
+    );
   }
 
   return (
@@ -72,7 +130,10 @@ const Offers= () => {
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
-          <button className="btn-primary">
+          <button 
+            className="btn-primary"
+            onClick={handleCreateOffer}
+          >
             <FileText className="h-4 w-4 mr-2" />
             Create Offer
           </button>
@@ -87,7 +148,7 @@ const Offers= () => {
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search candidates or positions..."
+                placeholder="Search candidates..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
@@ -103,25 +164,10 @@ const Offers= () => {
             >
               <option value="ALL">All Status</option>
               <option value="ACTIVE">Active</option>
-              <option value="PENDING">Pending</option>
+              <option value="ON_HOLD">On Hold</option>
               <option value="ACCEPTED">Accepted</option>
               <option value="EXPIRED">Expired</option>
             </select>
-
-            <div className="flex border border-gray-300 rounded-md">
-              <button
-                onClick={() => setViewMode('cards')}
-                className={`px-3 py-2 text-sm ${viewMode === 'cards' ? 'bg-primary-100 text-primary-700' : 'text-gray-500'}`}
-              >
-                Cards
-              </button>
-              <button
-                onClick={() => setViewMode('table')}
-                className={`px-3 py-2 text-sm border-l border-gray-300 ${viewMode === 'table' ? 'bg-primary-100 text-primary-700' : 'text-gray-500'}`}
-              >
-                Table
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -130,13 +176,11 @@ const Offers= () => {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="card p-5">
           <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <FileText className="h-8 w-8 text-blue-600" />
-            </div>
-            <div className="ml-5 w-0 flex-1">
+            <FileText className="h-8 w-8 text-blue-600" />
+            <div className="ml-5">
               <dl>
                 <dt className="text-sm font-medium text-gray-500 truncate">Total Offers</dt>
-                <dd className="text-lg font-medium text-gray-900">{offersData.length}</dd>
+                <dd className="text-lg font-medium text-gray-900">{statsData.total}</dd>
               </dl>
             </div>
           </div>
@@ -144,14 +188,12 @@ const Offers= () => {
 
         <div className="card p-5">
           <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <Clock className="h-8 w-8 text-yellow-600" />
-            </div>
-            <div className="ml-5 w-0 flex-1">
+            <Clock className="h-8 w-8 text-yellow-600" />
+            <div className="ml-5">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Active</dt>
+                <dt className="text-sm font-medium text-gray-500 truncate">On Hold</dt>
                 <dd className="text-lg font-medium text-gray-900">
-                  {offersData.filter(offer => offer.status === 'ACTIVE').length}
+                  {statsData.onHold}
                 </dd>
               </dl>
             </div>
@@ -160,14 +202,12 @@ const Offers= () => {
 
         <div className="card p-5">
           <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-            <div className="ml-5 w-0 flex-1">
+            <CheckCircle className="h-8 w-8 text-green-600" />
+            <div className="ml-5">
               <dl>
                 <dt className="text-sm font-medium text-gray-500 truncate">Accepted</dt>
                 <dd className="text-lg font-medium text-gray-900">
-                  {offersData.filter(offer => offer.status === 'ACCEPTED').length}
+                  {statsData.accepted}
                 </dd>
               </dl>
             </div>
@@ -176,14 +216,12 @@ const Offers= () => {
 
         <div className="card p-5">
           <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <AlertTriangle className="h-8 w-8 text-red-600" />
-            </div>
-            <div className="ml-5 w-0 flex-1">
+            <AlertTriangle className="h-8 w-8 text-blue-600" />
+            <div className="ml-5">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Competitive</dt>
+                <dt className="text-sm font-medium text-gray-500 truncate">Active</dt>
                 <dd className="text-lg font-medium text-gray-900">
-                  {offersData.filter(offer => offer.competition.isCompetitive).length}
+                  {statsData.active}
                 </dd>
               </dl>
             </div>
@@ -191,162 +229,154 @@ const Offers= () => {
         </div>
       </div>
 
-      {/* Offers List */}
-      {viewMode === 'cards' ? (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {filteredOffers.map((offer) => (
-            <div key={offer.id} className={`card p-6 ${offer.competition.isCompetitive ? 'border-orange-200 bg-orange-50' : ''}`}>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{offer.candidate.name}</h3>
-                    <span className={`badge ${getStatusColor(offer.status)}`}>
-                      {offer.status}
-                    </span>
-                    <span className={`badge ${getPriorityColor(offer.priority)}`}>
-                      {offer.priority}
-                    </span>
-                  </div>
-                  
-                  <p className="text-sm text-gray-600 mb-1">{offer.position.title}</p>
-                  <p className="text-lg font-bold text-gray-900 mb-3">
-                    {formatCurrency(offer.compensation.total)}
-                  </p>
-
-                  {offer.competition.isCompetitive && (
-                    <div className="flex items-center gap-2 mb-3">
-                      <AlertTriangle className="h-4 w-4 text-orange-500" />
-                      <span className="text-sm text-orange-700">
-                        {offer.competition.competitorCount} competing offers
-                      </span>
-                    </div>
-                  )}
-
-                  {offer.timeline.validTill && (
-                    <div className="flex items-center gap-2 mb-3">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">
-                        Expires in {getDaysUntilExpiry(offer.timeline.validTill)} days
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex gap-2 mt-4">
-                {offer.competition.isCompetitive && (
-                  <a
-                    href={generateWhatsAppLink(offer.candidate.name)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-whatsapp text-sm flex-1 justify-center"
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Coordinate
-                  </a>
-                )}
-                <button className="btn-secondary text-sm flex-1 justify-center">
-                  View Details
-                </button>
-                <button className="btn-primary text-sm flex-1 justify-center">
-                  Update Status
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Candidate
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Position
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Compensation
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Competition
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredOffers.map((offer) => (
-                  <tr key={offer.id} className={offer.competition.isCompetitive ? 'bg-orange-50' : ''}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{offer.candidate.name}</div>
-                        <div className="text-sm text-gray-500">{offer.candidate.status}</div>
+      {/* Candidates with Offers Table */}
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Candidate
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Offers
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredCandidates.map((candidateData) => (
+                <React.Fragment key={candidateData.candidate.id}>
+                  {/* Main Candidate Row */}
+                  <tr className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <button 
+                          onClick={() => toggleCandidate(candidateData.candidate.id)}
+                          className="mr-2 focus:outline-none"
+                        >
+                          {expandedCandidates[candidateData.candidate.id] ? 
+                            <ChevronUp className="h-4 w-4" /> : 
+                            <ChevronDown className="h-4 w-4" />
+                          }
+                        </button>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {candidateData.candidate.name}
+                          </div>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{offer.position.title}</div>
-                      <div className="text-sm text-gray-500">{offer.position.level}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {formatCurrency(offer.compensation.total)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`badge ${getStatusColor(offer.status)}`}>
-                        {offer.status}
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {candidateData.candidate.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {offer.competition.isCompetitive ? (
-                        <div className="flex items-center gap-1">
-                          <AlertTriangle className="h-4 w-4 text-orange-500" />
-                          <span className="text-sm text-orange-700">
-                            {offer.competition.competitorCount} competitors
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-500">None</span>
-                      )}
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-500">
+                        {candidateData.offers.length} offers
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex gap-2">
-                        {offer.competition.isCompetitive && (
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {candidateData.offers.length > 1 && (
                           <a
-                            href={generateWhatsAppLink(offer.candidate.name)}
+                            href={generateWhatsAppLink(candidateData.candidate.name)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-whatsapp-600 hover:text-whatsapp-900"
+                            className="text-green-600 hover:text-green-800"
                           >
-                            <MessageCircle className="h-4 w-4" />
+                            <MessageCircle className="h-5 w-5" />
                           </a>
                         )}
-                        <button className="text-primary-600 hover:text-primary-900">
-                          Edit
+                        <button
+                          onClick={() => navigate(`/offers/${candidateData.candidate.id}/manage`)}
+                          className="text-primary-600 hover:text-primary-900 text-sm font-medium"
+                        >
+                          Manage Offers
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
-      {filteredOffers.length === 0 && (
+                  {/* Expanded Offers Section */}
+                  {expandedCandidates[candidateData.candidate.id] && (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-4 bg-gray-50">
+                        <div className="space-y-4">
+                          {candidateData.offers.map((offer) => (
+                            <div 
+                              key={offer.id} 
+                              className="bg-white p-4 rounded-lg shadow border border-gray-200"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="text-sm font-medium text-gray-900">
+                                      {offer.position.title}
+                                    </h4>
+                                    <span className="text-xs text-gray-500">
+                                      ({offer.position.level})
+                                    </span>
+                                    <span className={`badge ${getStatusColor(offer.status)}`}>
+                                      {offer.status}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                                    <span>
+                                      {formatCurrency(offer.compensation.total)}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Calendar className="h-4 w-4" />
+                                      Valid till: {new Date(offer.timeline.validTill).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleEditOffer(offer)}
+                                    className="text-primary-600 hover:text-primary-900 text-sm font-medium"
+                                  >
+                                    Edit
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {filteredCandidates.length === 0 && (
         <div className="text-center py-12">
           <FileText className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No offers found</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No candidates found</h3>
           <p className="mt-1 text-sm text-gray-500">
-            {searchTerm || statusFilter !== 'ALL' ? 'Try adjusting your search or filters.' : 'Get started by creating a new offer.'}
+            {searchTerm || statusFilter !== 'ALL'
+              ? 'Try adjusting your search or filters.'
+              : 'Get started by creating a new offer.'}
           </p>
         </div>
+      )}
+      {selectedOffer && (
+        <OfferEditModal
+          offer={selectedOffer}
+          isOpen={!!selectedOffer}
+          onClose={() => setSelectedOffer(null)}
+          onUpdate={handleUpdateOffer}
+        />
       )}
     </div>
   )

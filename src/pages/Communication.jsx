@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import { 
   MessageCircle, 
   Clock, 
@@ -7,13 +7,33 @@ import {
   ExternalLink,
   User,
   Calendar,
-  TrendingUp
-} from 'lucide-react'
-import { communicationsData } from '../data/sampleData'
+  TrendingUp,
+  X
+} from 'lucide-react';
+import { communicationsData } from '../data/sampleData';
+import { 
+  useGetCommunicationsQuery, 
+  useUpdateCommunicationOutcomeMutation 
+} from '../redux/api/communicationApiSlice';
+import UpdateOutcomeModal from '../components/common/UpdateOutcomeModal';
 
 const Communications = () => {
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [roleFilter, setRoleFilter] = useState('ALL')
+  const [showOutcomeModal, setShowOutcomeModal] = useState(false);
+  const [selectedCommunication, setSelectedCommunication] = useState(null);
+
+  // Use RTK Query hooks
+  const { 
+    data: communications = [], 
+    isLoading, 
+    error 
+  } = useGetCommunicationsQuery();
+
+  const [
+    updateOutcome, 
+    { isLoading: isUpdating }
+  ] = useUpdateCommunicationOutcomeMutation();
 
   const filteredCommunications = communicationsData.filter(comm => {
     const matchesStatus = statusFilter === 'ALL' || comm.status === statusFilter
@@ -66,12 +86,32 @@ const Communications = () => {
     averageResponseTime: 35 // minutes
   }
 
+  const handleUpdateOutcome = async (outcomeData) => {
+    try {
+      await updateOutcome({
+        communicationId: selectedCommunication.id,
+        outcomeData
+      }).unwrap();
+      
+      setShowOutcomeModal(false);
+      setSelectedCommunication(null);
+    } catch (error) {
+      console.error('Failed to update outcome:', error);
+      // Handle error (show toast, etc.)
+    }
+  };
+
+  if (isLoading) return <div>Loading communications...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="md:flex md:items-center md:justify-between">
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900">WhatsApp Communications</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            WhatsApp Communications
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
             Track and manage HR coordination conversations
           </p>
@@ -243,6 +283,7 @@ const Communications = () => {
               </div>
 
               <div className="flex flex-col gap-2">
+                {/* Action Buttons */}
                 <a
                   href={generateWhatsAppLink(communication)}
                   target="_blank"
@@ -256,8 +297,15 @@ const Communications = () => {
                   View Details
                 </button>
                 {communication.status === 'ACTIVE' && (
-                  <button className="btn-primary text-sm">
-                    Update Outcome
+                  <button 
+                    onClick={() => {
+                      setSelectedCommunication(communication);
+                      setShowOutcomeModal(true);
+                    }}
+                    className="btn-primary text-sm"
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? 'Updating...' : 'Update Outcome'}
                   </button>
                 )}
               </div>
@@ -291,8 +339,20 @@ const Communications = () => {
           </p>
         </div>
       )}
-    </div>
-  )
-}
 
-export default Communications 
+      {/* Update Outcome Modal */}
+      {showOutcomeModal && selectedCommunication && (
+        <UpdateOutcomeModal
+          communication={selectedCommunication}
+          onClose={() => {
+            setShowOutcomeModal(false);
+            setSelectedCommunication(null);
+          }}
+          onSubmit={handleUpdateOutcome}
+        />
+      )}
+    </div>
+  );
+};
+
+export default Communications; 

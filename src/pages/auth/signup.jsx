@@ -1,55 +1,229 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, EyeOff, Building, MapPin, Phone } from 'lucide-react'
 import { useSelector, useDispatch } from "react-redux";
 import { setSignupField, setAuthenticated } from "../../redux/slices/authSlice";
 import { useSignupMutation } from '../../redux/api/authApiSlice';
-
+import { useNavigate } from 'react-router-dom';
 import { navigationLinks } from '../../utils/constants';
+import { validateField } from '../../utils/validation';
+import FormError from '../../components/common/FormError';
 
-const Register= () => {
-
+const Register = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const signup = useSelector((state) => state.auth.signup);
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [signupMutation, { isLoading, error, data }] = useSignupMutation();
+  // Form validation state
+  const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
+  const [touched, setTouched] = useState({});
 
-  const handleSubmit = async (e) => {
-   e.preventDefault();
-  if (signup.password !== signup.confirmPassword) {
-    alert('Passwords do not match');
-    return;
-  }
+  const [signupMutation, { isLoading }] = useSignupMutation();
 
-  try {
-    const result = await signupMutation(signup).unwrap();
-    console.log(result);
-    dispatch(setAuthenticated({ isAuthenticated: true, user: result.user }));
-    // Optionally redirect here
-  } catch (err) {
-    alert(err?.data?.message || "Signup failed");
-  }
-  }
+  // Validate field on change
+  const validateFormField = (name, value) => {
+    let validation = { isValid: true, error: '' };
+
+    // Special validation for confirm password
+    if (name === 'confirmPassword') {
+      if (value !== signup.password) {
+        validation = { isValid: false, error: 'Passwords do not match' };
+      }
+    } else {
+      validation = validateField(name, value);
+    }
+
+    setErrors(prev => ({
+      ...prev,
+      [name]: validation.error
+    }));
+    return validation.isValid;
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     dispatch(setSignupField({ field: name, value }));
-  }
+    
+    // Validate if field has been touched
+    if (touched[name]) {
+      validateFormField(name, value);
+    }
 
-  // const industries = [
-  //   'Technology', 'Healthcare', 'Finance', 'Education', 'Manufacturing',
-  //   'Retail', 'Consulting', 'Media', 'Government', 'Other'
-  // ]
+    // Validate confirm password when password changes
+    if (name === 'password' && touched.confirmPassword) {
+      validateFormField('confirmPassword', signup.confirmPassword);
+    }
+  };
 
-  const companySizes = [
-   'Startup', "Small", "Medium", "Large"
-  ]
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    validateFormField(name, value);
+  };
 
-  const hrRoles = [
-    "HR Executive", "Senior HR", "HR Manager", "HR Director"
-  ]
+  const validateForm = () => {
+    const requiredFields = [
+      'name',
+      'email',
+      'password',
+      'confirmPassword',
+      'whatsappNumber',
+      'companyName',
+      'industry',
+      'companySize',
+      'city',
+      'state',
+      'role'
+    ];
+
+    const newErrors = {};
+    let isValid = true;
+
+    // Validate all required fields
+    requiredFields.forEach(field => {
+      const value = signup[field];
+      if (!value) {
+        newErrors[field] = 'This field is required';
+        isValid = false;
+      } else {
+        const validation = validateFormField(field, value);
+        if (!validation) {
+          isValid = false;
+        }
+      }
+    });
+
+    // Additional password match validation
+    if (signup.password !== signup.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormError('');
+
+    // Mark all fields as touched
+    const allFields = {
+      name: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+      whatsappNumber: true,
+      companyName: true,
+      industry: true,
+      companySize: true,
+      city: true,
+      state: true,
+      role: true
+    };
+    setTouched(allFields);
+
+    if (!validateForm()) {
+      setFormError('Please fix all errors before submitting.');
+      return;
+    }
+
+    try {
+      const userDetails = {
+        name: signup.name,
+        email: signup.email,
+        password: signup.password,
+        whatsapp: {
+          phoneNumber: signup.whatsappNumber
+        },
+        company: {
+          name: signup.companyName,
+          industry: signup.industry,
+          size: signup.companySize,
+          location: {
+            city: signup.city,
+            state: signup.state
+          }
+        },
+        role: signup.role
+      };
+
+      await signupMutation(userDetails).unwrap();
+      navigate(navigationLinks.login.path);
+    } catch (err) {
+      console.error("Signup error:", err);
+      setFormError(err?.data?.message || "Registration failed. Please try again.");
+    }
+  };
+
+  // Clear form error when inputs change
+  useEffect(() => {
+    if (formError) {
+      setFormError('');
+    }
+  }, [signup]);
+
+  const companySizes = ['Startup', "Small", "Medium", "Large"];
+  const hrRoles = ["HR Executive", "Senior HR", "HR Manager", "HR Director"];
+
+  const renderInput = (name, label, type = 'text', placeholder = '', icon = null) => (
+    <div>
+      <label htmlFor={name} className="block text-sm font-medium text-gray-700">
+        {label} *
+      </label>
+      <div className="mt-1 relative">
+        <input
+          type={type}
+          id={name}
+          name={name}
+          required
+          value={signup[name]}
+          onChange={handleInputChange}
+          onBlur={handleBlur}
+          placeholder={placeholder}
+          className={`appearance-none block w-full px-3 py-2 border ${
+            errors[name] ? 'border-red-300' : 'border-gray-300'
+          } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm ${
+            icon ? 'pl-10' : ''
+          }`}
+        />
+        {icon && (
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            {icon}
+          </div>
+        )}
+        <FormError error={touched[name] && errors[name]} />
+      </div>
+    </div>
+  );
+
+  const renderSelect = (name, label, options) => (
+    <div>
+      <label htmlFor={name} className="block text-sm font-medium text-gray-700">
+        {label} *
+      </label>
+      <select
+        id={name}
+        name={name}
+        required
+        value={signup[name]}
+        onChange={handleInputChange}
+        onBlur={handleBlur}
+        className={`mt-1 block w-full border ${
+          errors[name] ? 'border-red-300' : 'border-gray-300'
+        } rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm`}
+      >
+        <option value="">Select {label.toLowerCase()}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+      <FormError error={touched[name] && errors[name]} />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -73,42 +247,19 @@ const Register= () => {
         </div>
 
         <div className="mt-8 card p-8">
+          {formError && (
+            <div className="mb-6 p-4 rounded-md bg-red-50 border border-red-200">
+              <FormError error={formError} />
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Personal Information */}
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    required
-                    value={signup.name}
-                    onChange={handleInputChange}
-                    placeholder="Priya Sharma"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    required
-                    value={signup.email}
-                    onChange={handleInputChange}
-                    placeholder="priya@techcorpa.com"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  />
-                </div>
+                {renderInput('name', 'Full Name', 'text', 'Priya Sharma')}
+                {renderInput('email', 'Email Address', 'email', 'priya@techcorpa.com')}
 
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -122,7 +273,10 @@ const Register= () => {
                       required
                       value={signup.password}
                       onChange={handleInputChange}
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm pr-10"
+                      onBlur={handleBlur}
+                      className={`block w-full border ${
+                        errors.password ? 'border-red-300' : 'border-gray-300'
+                      } rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm pr-10`}
                     />
                     <button
                       type="button"
@@ -135,6 +289,7 @@ const Register= () => {
                         <Eye className="h-4 w-4 text-gray-400" />
                       )}
                     </button>
+                    <FormError error={touched.password && errors.password} />
                   </div>
                 </div>
 
@@ -150,7 +305,10 @@ const Register= () => {
                       required
                       value={signup.confirmPassword}
                       onChange={handleInputChange}
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm pr-10"
+                      onBlur={handleBlur}
+                      className={`block w-full border ${
+                        errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                      } rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm pr-10`}
                     />
                     <button
                       type="button"
@@ -163,43 +321,12 @@ const Register= () => {
                         <Eye className="h-4 w-4 text-gray-400" />
                       )}
                     </button>
+                    <FormError error={touched.confirmPassword && errors.confirmPassword} />
                   </div>
                 </div>
 
-                <div>
-                  <label htmlFor="whatsappNumber" className="block text-sm font-medium text-gray-700">
-                    WhatsApp Number *
-                  </label>
-                  <input
-                    type="tel"
-                    id="whatsappNumber"
-                    name="whatsappNumber"
-                    required
-                    value={signup.whatsappNumber}
-                    onChange={handleInputChange}
-                    placeholder="+91-9876543210"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                    HR Role *
-                  </label>
-                  <select
-                    id="role"
-                    name="role"
-                    required
-                    value={signup.role}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  >
-                    <option value="">Select your role</option>
-                    {hrRoles.map((role) => (
-                      <option key={role} value={role}>{role}</option>
-                    ))}
-                  </select>
-                </div>
+                {renderInput('whatsappNumber', 'WhatsApp Number', 'tel', '+91-9876543210', <Phone className="h-5 w-5 text-gray-400" />)}
+                {renderSelect('role', 'HR Role', hrRoles)}
               </div>
             </div>
 
@@ -207,106 +334,11 @@ const Register= () => {
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">Company Information</h3>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
-                    Company Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="companyName"
-                    name="companyName"
-                    required
-                    value={signup.companyName}
-                    onChange={handleInputChange}
-                    placeholder="TechCorpA"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="industry" className="block text-sm font-medium text-gray-700">
-                    Industry *
-                  </label>
-                  <input
-                    type="text"
-                    id="industry"
-                    name="industry"
-                    value={signup.industry}
-                    onChange={handleInputChange}
-                    placeholder="Technology"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  />
-                </div>
-
-                {/* <div>
-                  <label htmlFor="industry" className="block text-sm font-medium text-gray-700">
-                    Industry *
-                  </label>
-                  <select
-                    id="industry"
-                    name="industry"
-                    required
-                    value={formData.industry}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  >
-                    <option value="">Select industry</option>
-                    {industries.map((industry) => (
-                      <option key={industry} value={industry}>{industry}</option>
-                    ))}
-                  </select>
-                </div> */}
-
-                <div>
-                  <label htmlFor="companySize" className="block text-sm font-medium text-gray-700">
-                    Company Size *
-                  </label>
-                  <select
-                    id="companySize"
-                    name="companySize"
-                    required
-                    value={signup.companySize}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  >
-                    <option value="">Select company size</option>
-                    {companySizes.map((size) => (
-                      <option key={size} value={size}>{size}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                    City *
-                  </label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    required
-                    value={signup.city}
-                    onChange={handleInputChange}
-                    placeholder="Bangalore"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="state" className="block text-sm font-medium text-gray-700">
-                    State *
-                  </label>
-                  <input
-                    type="text"
-                    id="state"
-                    name="state"
-                    required
-                    value={signup.state}
-                    onChange={handleInputChange}
-                    placeholder="Karnataka"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  />
-                </div>
+                {renderInput('companyName', 'Company Name', 'text', 'TechCorpA', <Building className="h-5 w-5 text-gray-400" />)}
+                {renderInput('industry', 'Industry', 'text', 'Technology')}
+                {renderSelect('companySize', 'Company Size', companySizes)}
+                {renderInput('city', 'City', 'text', 'Bangalore', <MapPin className="h-5 w-5 text-gray-400" />)}
+                {renderInput('state', 'State', 'text', 'Karnataka', <MapPin className="h-5 w-5 text-gray-400" />)}
               </div>
             </div>
 
@@ -351,7 +383,7 @@ const Register= () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Register
+export default Register;

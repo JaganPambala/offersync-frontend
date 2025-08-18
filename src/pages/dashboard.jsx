@@ -11,10 +11,45 @@ import {
   ArrowUp,
   ArrowDown
 } from 'lucide-react'
-import { currentUser, dashboardData } from '../data/sampleData'
+import { dashboardData } from '../data/sampleData'
+import { navigationLinks } from '../utils/constants'
+import { useSelector } from 'react-redux'
 
 const Dashboard = () => {
+  // Get user from Redux state
+  const user = useSelector((state) => state.auth.user)
+  const token = useSelector((state) => state.auth.token)
+  console.log("user", user);
+  console.log("token", token);
   const { overview, whatsappMetrics, recentActivity } = dashboardData
+
+  // Function to get greeting based on time of day
+  const getGreeting = () => {
+    // Get local time using toLocaleString
+    const hour = new Date().toLocaleString('en-US', { hour: 'numeric', hour12: false })
+    const hourNumber = parseInt(hour)
+    
+    if (hourNumber >= 5 && hourNumber < 12) return 'Good morning'
+    if (hourNumber >= 12 && hourNumber < 17) return 'Good afternoon'
+    if (hourNumber >= 17 && hourNumber < 22) return 'Good evening'
+    return 'Good night'
+  }
+
+  // Welcome message based on user data
+  const getWelcomeMessage = () => {
+    if (user?.name) {
+      return `${getGreeting()}, ${user.name}! 👋`
+    }
+    return `${getGreeting()}, Welcome to OfferSync! 👋`
+  }
+
+  // Company and role info based on user data
+  const getSubtitle = () => {
+    if (user?.role) {
+      return `${user.role}${user.company?.name ? ` • ${user.company.name}` : ''}`
+    }
+    return 'Your HR collaboration platform'
+  }
 
   const stats = [
     {
@@ -55,21 +90,21 @@ const Dashboard = () => {
     {
       name: 'Check Candidate',
       description: 'Verify candidate duplicates',
-      href: '/candidates/check',
+      href: navigationLinks.candidateCheck.path,
       icon: Users,
       color: 'bg-primary-600'
     },
     {
       name: 'View Offers',
       description: 'Manage active offers',
-      href: '/offers',
+      href: navigationLinks.offers.path,
       icon: FileText,
       color: 'bg-green-600'
     },
     {
       name: 'Communications',
       description: 'WhatsApp coordination',
-      href: '/communications',
+      href: navigationLinks.communications.path,
       icon: MessageCircle,
       color: 'bg-whatsapp-500'
     }
@@ -81,10 +116,10 @@ const Dashboard = () => {
       <div className="md:flex md:items-center md:justify-between">
         <div className="flex-1 min-w-0">
           <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-            Welcome back, {currentUser.name}! 👋
+            {getWelcomeMessage()}
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            {currentUser.company.name} • {currentUser.role}
+            {getSubtitle()}
           </p>
         </div>
       </div>
