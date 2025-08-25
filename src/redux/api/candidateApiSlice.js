@@ -26,22 +26,14 @@ export const candidateApi = createApi({
 
     // ✅ NEW: fetch candidate + offers
     getCandidateOffers: builder.query({
-      query: (candidateId) => navigationLinks.manageOffer.path.replace(":candidateId", candidateId)  ,
+      query: (candidateId) =>
+        navigationLinks.manageOffer.path.replace(":candidateId", candidateId),
     }),
 
     // ✅ NEW: delete offer
-    deleteOffer: builder.mutation({
-      query: (offerId) => ({
-        url: `/offers/${offerId}`,
-        method: "DELETE",
-      }),
-    }),
   }),
 });
 
 // export hooks
-export const {
-  useCheckForCandidateMutation,
-  useGetCandidateOffersQuery,
-  useDeleteOfferMutation,
-} = candidateApi;
+export const { useCheckForCandidateMutation, useGetCandidateOffersQuery } =
+  candidateApi;

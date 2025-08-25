@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
+import { useGetCandidateOffersQuery } from "../redux/api/candidateApiSlice";
 import {
-  useGetCandidateOffersQuery,
-    useDeleteOfferMutation,
-} from "../redux/api/candidateApiSlice";
-import {  useUpdateOfferMutation } from "../redux/api/offerApiSlice";
+  useUpdateOfferMutation,
+  useDeleteOfferMutation, // <-- Import the hook
+} from "../redux/api/offerApiSlice";
 import { Edit3, Trash2, Calendar, Mail, Phone } from "lucide-react";
 import OfferEditModal from "../components/common/OfferEditModal";
 
@@ -14,18 +14,26 @@ const ManageOffersPage = ({ loggedInHRCompany }) => {
 
   const { data, isLoading, isError } = useGetCandidateOffersQuery(candidateId);
   const [updateOffer] = useUpdateOfferMutation();
-  const [deleteOffer] = useDeleteOfferMutation();
+  const [deleteOffer] = useDeleteOfferMutation(); // <-- Use the hook
   const [selectedOffer, setSelectedOffer] = useState(null);
 
   if (isLoading) return <div className="text-center p-6">Loading...</div>;
-  if (isError || !data?.candidate) return <div className="text-red-500 p-6">Error fetching data</div>;
+  if (isError || !data?.candidate)
+    return <div className="text-red-500 p-6">Error fetching data</div>;
 
   const candidate = data.candidate;
-  const offers = data?.offers?.filter((o) => o.company === loggedInHRCompany) || [];
+  const offers =
+    data?.offers?.filter((o) => o.company === loggedInHRCompany) || [];
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this offer?")) {
-      await deleteOffer(id).unwrap(); // ✅ safer
+      try {
+        await deleteOffer(id).unwrap();
+        // Optionally, show a success message or refetch offers
+      } catch (error) {
+        alert("Failed to delete offer. Please try again.");
+        console.error("Delete error:", error);
+      }
     }
   };
 
@@ -34,7 +42,9 @@ const ManageOffersPage = ({ loggedInHRCompany }) => {
       await updateOffer(updatedData).unwrap();
       setSelectedOffer(null);
     } catch (error) {
-      if (error?.data?.message === "You are not authorized to update this offer.") {
+      if (
+        error?.data?.message === "You are not authorized to update this offer."
+      ) {
         alert("You are not authorized to update this offer.");
       } else {
         alert("Failed to update offer. Please try again.");
@@ -55,12 +65,14 @@ const ManageOffersPage = ({ loggedInHRCompany }) => {
       </div>
 
       {/* Offers */}
-      <h3 className="text-lg font-medium mb-4">Offers from {loggedInHRCompany}</h3>
+      <h3 className="text-lg font-medium mb-4">
+        Offers from {loggedInHRCompany}
+      </h3>
       <div className="space-y-4">
         {offers.length > 0 ? (
           offers.map((offer) => (
             <div
-              key={offer.id}
+              key={offer._id}
               className="bg-gray-50 rounded-lg shadow-sm p-4 flex justify-between items-center"
             >
               <div>
@@ -72,7 +84,8 @@ const ManageOffersPage = ({ loggedInHRCompany }) => {
                   <span className="font-medium">Status:</span> {offer.status}
                 </p>
                 <p className="text-sm flex items-center text-gray-500">
-                  <Calendar className="h-4 w-4 mr-1" /> Valid Till: {offer.timeline.validTill}
+                  <Calendar className="h-4 w-4 mr-1" /> Valid Till:{" "}
+                  {offer.timeline.validTill}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -83,7 +96,7 @@ const ManageOffersPage = ({ loggedInHRCompany }) => {
                   <Edit3 className="h-5 w-5" />
                 </button>
                 <button
-                  onClick={() => handleDelete(offer.id)}
+                  onClick={() => handleDelete(offer._id)}
                   className="p-2 text-red-600 hover:bg-red-50 rounded-full"
                 >
                   <Trash2 className="h-5 w-5" />

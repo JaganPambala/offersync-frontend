@@ -28,7 +28,6 @@ const Offers = () => {
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [createCommunication] = useCreateCommunicationMutation();
 
-
   const { data: response, isLoading, isError } = useGetAllOffersQuery();
 
   const [updateOffer] = useUpdateOfferMutation();
@@ -41,10 +40,7 @@ const Offers = () => {
   console.log("Processed candidatesData:", candidatesData);
 
   const user = localStorage.getItem("user");
-    const loggedInHRId = user ? JSON.parse(user)._id : null;
-
-
-
+  const loggedInHRId = user ? JSON.parse(user)._id : null;
 
   // Toggle candidate expansion
   const toggleCandidate = (candidateId) => {
@@ -133,12 +129,14 @@ const Offers = () => {
       setSelectedOffer(null); // Close modal on success
     } catch (error) {
       console.error("Failed to update offer:", error);
-      if (error?.data?.message === "You are not authorized to update this offer.") {
-      alert("You are not authorized to update this offer.");
-    } else {
-      alert("Failed to update offer. Please try again.");
-    }
-    console.error("Failed to update offer:", error);
+      if (
+        error?.data?.message === "You are not authorized to update this offer."
+      ) {
+        alert("You are not authorized to update this offer.");
+      } else {
+        alert("Failed to update offer. Please try again.");
+      }
+      console.error("Failed to update offer:", error);
       // You might want to show an error message to the user hereww
     }
   };
@@ -146,13 +144,13 @@ const Offers = () => {
   // Initiate WhatsApp communication for the correct candidate
   const handleInitiateAndOpenWhatsApp = async (candidateName, candidateId) => {
     // Find the correct candidateData
-    const candidateData = candidatesData.find(c => c.candidate.id === candidateId);
+    const candidateData = candidatesData.find(
+      (c) => c.candidate.id === candidateId
+    );
     if (!candidateData) return;
 
     const candidateInfo = candidateData.candidate || {};
     const allOffers = candidateData.offers || [];
-
-    
 
     const initiatorOffer = allOffers.find(
       (offer) => offer.hr.id === loggedInHRId
@@ -274,7 +272,8 @@ const Offers = () => {
               <option value="ON_HOLD">On Hold</option>
               <option value="ACCEPTED">Accepted</option>
               <option value="EXPIRED">Expired</option>
-          
+              <option value="REJECTED">Rejected</option>
+              <option value="WITHDRAWN">Withdrawn</option>
             </select>
           </div>
         </div>
@@ -407,7 +406,11 @@ const Offers = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() =>
-                            navigate(navigationLinks.manageOffer.path.replace(":candidateId", candidateData.candidate.id)
+                            navigate(
+                              navigationLinks.manageOffer.path.replace(
+                                ":candidateId",
+                                candidateData.candidate.id
+                              )
                             )
                           }
                           className="text-primary-600 hover:text-primary-900 text-sm font-medium"
@@ -423,74 +426,104 @@ const Offers = () => {
                     <tr>
                       <td colSpan="4" className="px-6 py-4 bg-gray-50">
                         <div className="space-y-4">
-                          {candidateData.offers.map((offer) => (
-                            <div
-                              key={offer.id}
-                              className="bg-white p-4 rounded-lg shadow border border-gray-200"
-                            >
-                              <div className="flex justify-between items-start">
-                                <div className="space-y-2">
+                          {candidateData.offers.map((offer) => {
+                            // Check if candidate joined elsewhere
+                            const candidateJoined =
+                              candidateData.candidate.status === "JOINED";
+                            // Check if candidate accepted another offer
+                            const acceptedElsewhere = candidateData.offers.some(
+                              (o) => o.status === "ACCEPTED"
+                            );
+                            // Tooltip logic
+                            let editTooltip = "";
+                            let editDisabled = false;
+                            if (offer.status === "EXPIRED" || candidateJoined) {
+                              editTooltip =
+                                "Candidate already joined another company";
+                              editDisabled = true;
+                            } else if (
+                              offer.status === "REJECTED" &&
+                              acceptedElsewhere
+                            ) {
+                              editTooltip = "Candidate accepted another offer";
+                              // Optionally, you can disable or just show tooltip
+                              // editDisabled = true;
+                            }
+
+                            return (
+                              <div
+                                key={offer.id}
+                                className="bg-white p-4 rounded-lg shadow border border-gray-200"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="text-sm font-medium text-gray-900">
+                                        {offer.position.title}
+                                      </h4>
+                                      <span className="text-xs text-gray-500">
+                                        ({offer.position.level})
+                                      </span>
+                                      <span
+                                        className={`badge ${getStatusColor(
+                                          offer.status
+                                        )}`}
+                                      >
+                                        {offer.status}
+                                      </span>
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      <span>
+                                        Offered by: {offer.hr.name} at{" "}
+                                        {offer.hr.company}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                                      <span>
+                                        {formatCurrency(
+                                          offer.compensation.total
+                                        )}
+                                      </span>
+
+                                      <span className="flex items-center gap-1">
+                                        <Calendar className="h-4 w-4" />
+                                        Valid till:{" "}
+                                        {new Date(
+                                          offer.timeline.validTill
+                                        ).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  </div>
                                   <div className="flex items-center gap-2">
-                                    <h4 className="text-sm font-medium text-gray-900">
-                                      {offer.position.title}
-                                    </h4>
-                                    <span className="text-xs text-gray-500">
-                                      ({offer.position.level})
-                                    </span>
-                                    <span
-                                      className={`badge ${getStatusColor(
-                                        offer.status
-                                      )}`}
+                                    {candidateData.offers.length > 1 &&
+                                      offer.hr?.id !== loggedInHRId && (
+                                        <button
+                                          onClick={() =>
+                                            handleInitiateAndOpenWhatsApp(
+                                              candidateData.candidate.name,
+                                              candidateData.candidate.id
+                                            )
+                                          }
+                                          className="text-green-600 hover:text-green-800"
+                                        >
+                                          <MessageCircle className="h-5 w-5" />
+                                        </button>
+                                      )}
+
+                                    <button
+                                      onClick={() => handleEditOffer(offer)}
+                                      className="text-primary-600 hover:text-primary-900 text-sm font-medium"
+                                      disabled={editDisabled}
+                                      title={editTooltip || "Edit Offer"}
                                     >
-                                      {offer.status}
-                                    </span>
-                                  </div> 
-                                  <div className="text-sm text-gray-500">
-                                   <span>Offered by: {offer.hr.name} at {offer.hr.company}</span>
+                                      Edit
+                                    </button>
                                   </div>
-                                  
-                                  
-
-                                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                                    <span>
-                                      {formatCurrency(offer.compensation.total)}
-                                    </span>
-                              
-                                    <span className="flex items-center gap-1">
-                                      <Calendar className="h-4 w-4" />
-                                      Valid till:{" "}
-                                      {new Date(
-                                        offer.timeline.validTill
-                                      ).toLocaleDateString()}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                        {candidateData.offers.length > 1 && offer.hr?.id !== loggedInHRId && (
-  <button
-    onClick={() =>
-      handleInitiateAndOpenWhatsApp(
-        candidateData.candidate.name,
-        candidateData.candidate.id,
-      )
-    }
-    className="text-green-600 hover:text-green-800"
-  >
-    <MessageCircle className="h-5 w-5" />
-  </button>
-)}
-
-                                  
-                                  <button
-                                    onClick={() => handleEditOffer(offer)}
-                                    className="text-primary-600 hover:text-primary-900 text-sm font-medium"
-                                  >
-                                    Edit
-                                  </button>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </td>
                     </tr>

@@ -62,6 +62,13 @@ export const offerApi = createApi({
       }),
       invalidatesTags: ["Offers"],
     }),
+    deleteOffer: builder.mutation({
+      query: (id) => ({
+        url: `/offers/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Offers"],
+    }),
     getAllOffers: builder.query({
       query: () => ({
         url: "/offers",
@@ -93,4 +100,5 @@ export const {
   useCreateCompetitiveOfferMutation,
   useUpdateOfferMutation,
   useGetAllOffersQuery,
+  useDeleteOfferMutation,
 } = offerApi;

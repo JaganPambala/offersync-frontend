@@ -19,6 +19,7 @@ const OfferEditModal = ({ offer, isOpen, onClose, onUpdate }) => {
     { value: "REJECTED", label: "Rejected" },
     { value: "EXPIRED", label: "Expired" },
     { value: "JOINED", label: "Joined" },
+    { value: "WITHDRAWN", label: "Withdrawn" },
   ];
 
   const handleSubmit = async (e) => {
