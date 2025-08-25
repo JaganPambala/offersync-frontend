@@ -24,15 +24,15 @@ export const communicationApi = createApi({
 
     // Get single communication
     getCommunicationById: builder.query({
-      query: (id) => `/communications/${id}`,
+      query: (id) => `/communication/${id}`,
       providesTags: (result, error, id) => [{ type: "Communication", id }],
     }),
 
     // Update communication outcome
     updateCommunicationOutcome: builder.mutation({
       query: ({ communicationId, outcomeData }) => ({
-        url: `/communications/${communicationId}/outcome`,
-        method: "PUT",
+        url: `/communication/${communicationId}/outcome`,
+        method: "POST",
         body: outcomeData,
       }),
       // Invalidate the cache to trigger a refetch

@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
+import { useGetCommunicationByIdQuery } from '../../redux/api/communicationApiSlice'; // Adjust path as needed
 import { Calendar, X, CheckCircle, Clock } from 'lucide-react';
 
-const UpdateOutcomeModal = ({ communication, onClose, onSubmit }) => {
+const UpdateOutcomeModal = ({
+communication, onClose, onSubmit
+}) => {
+  console.log('UpdateOutcomeModal mounted with communicationId:',communication.id); 
   const [outcomeType, setOutcomeType] = useState('');
   const [formData, setFormData] = useState({
     postponedOfferId: '',
@@ -22,23 +26,21 @@ const UpdateOutcomeModal = ({ communication, onClose, onSubmit }) => {
     });
   };
 
-  // Example offer data structure
-  const offers = [
-    {
-      id: '1',
-      company: 'Your Company',
-      position: 'Software Engineer',
-      expectedJoinDate: '2024-03-01',
-      salary: '₹15,00,000'
-    },
-    {
-      id: '2',
-      company: communication.otherParty.company,
-      position: 'Software Engineer',
-      expectedJoinDate: '2024-03-15',
-      salary: '₹16,00,000'
-    }
-  ];
+  // Fetch communication details by ID
+  const { data, isLoading, isError } = useGetCommunicationByIdQuery(communication.id);
+
+  // Extract offers from API response
+  const offers = data?.data?.offers?.map((offerObj) => {
+    const offer = offerObj.offerId;
+    return {
+      id: offer._id,
+      company: offerObj.role === 'INITIATOR' ? data.data.initiatorHrId.company.name : data.data.recipientHrId.company.name,
+      position: offer.position.title,
+      expectedJoinDate: offer.timeline.expectedJoinDate,
+      salary: `₹${offer.compensation.total}`,
+      status: offer.status
+    };
+  }) || [];
 
   const OfferCard = ({ offer, isSelected, onSelect }) => (
     <div 
@@ -79,6 +81,29 @@ const UpdateOutcomeModal = ({ communication, onClose, onSubmit }) => {
     </div>
   );
 
+  // Loader
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+          <div className="text-center py-10">Loading offer details...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error
+  if (isError) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+          <div className="text-center py-10 text-red-500">Failed to load offer details.</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ...existing code...
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -93,6 +118,8 @@ const UpdateOutcomeModal = ({ communication, onClose, onSubmit }) => {
           </button>
         </div>
 
+        {/* ...existing form code, using offers array as before... */}
+        {/* Outcome Type Selection */}
         <form onSubmit={(e) => {
           e.preventDefault();
           onSubmit({
@@ -100,7 +127,7 @@ const UpdateOutcomeModal = ({ communication, onClose, onSubmit }) => {
             ...formData
           });
         }} className="space-y-6">
-          {/* Outcome Type Selection */}
+          {/* ...existing code... */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Select Outcome Type

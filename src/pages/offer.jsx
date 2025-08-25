@@ -18,6 +18,7 @@ import {
 import { navigationLinks } from "../utils/constants.js";
 import OfferEditModal from "../components/common/OfferEditModal";
 import { useCreateCommunicationMutation } from "../redux/api/communicationApiSlice.js";
+import { getCandidateCommunication } from "../utils/communicationdetils.js";
 
 const Offers = () => {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ const Offers = () => {
   const [expandedCandidates, setExpandedCandidates] = useState({});
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [createCommunication] = useCreateCommunicationMutation();
+
 
   const { data: response, isLoading, isError } = useGetAllOffersQuery();
 
@@ -38,19 +40,11 @@ const Offers = () => {
   const candidatesData = response?.success ? response.data : [];
   console.log("Processed candidatesData:", candidatesData);
 
-  const candidateInfo = candidatesData[0]?.candidate || {};
-  const allOffers = candidatesData[0]?.offers || [];
-
   const user = localStorage.getItem("user");
-  const loggedInHRId = user ? JSON.parse(user)._id : null;
-  console.log("Logged in HR ID:", loggedInHRId);
+    const loggedInHRId = user ? JSON.parse(user)._id : null;
 
-  const initiatorOffer = allOffers.find(
-    (offer) => offer.hr.id === loggedInHRId
-  );
-  const recipientOffer = allOffers.find(
-    (offer) => offer.hr.id !== loggedInHRId
-  );
+
+
 
   // Toggle candidate expansion
   const toggleCandidate = (candidateId) => {
@@ -139,11 +133,39 @@ const Offers = () => {
       setSelectedOffer(null); // Close modal on success
     } catch (error) {
       console.error("Failed to update offer:", error);
+      if (error?.data?.message === "You are not authorized to update this offer.") {
+      alert("You are not authorized to update this offer.");
+    } else {
+      alert("Failed to update offer. Please try again.");
+    }
+    console.error("Failed to update offer:", error);
       // You might want to show an error message to the user hereww
     }
   };
 
-  const handleInitiateAndOpenWhatsApp = async () => {
+  // Initiate WhatsApp communication for the correct candidate
+  const handleInitiateAndOpenWhatsApp = async (candidateName, candidateId) => {
+    // Find the correct candidateData
+    const candidateData = candidatesData.find(c => c.candidate.id === candidateId);
+    if (!candidateData) return;
+
+    const candidateInfo = candidateData.candidate || {};
+    const allOffers = candidateData.offers || [];
+
+    
+
+    const initiatorOffer = allOffers.find(
+      (offer) => offer.hr.id === loggedInHRId
+    );
+    const recipientOffer = allOffers.find(
+      (offer) => offer.hr.id !== loggedInHRId
+    );
+
+    if (!initiatorOffer || !recipientOffer) {
+      alert("Both offers must be present to initiate communication.");
+      return;
+    }
+
     const whatsappPayload = {
       initiatorHR: {
         _id: initiatorOffer.hr.id,
@@ -189,7 +211,6 @@ const Offers = () => {
       if (response?.data?.whatsappLink) {
         window.open(response.data.whatsappLink, "_blank");
       } else {
-        // Optionally show a notification: WhatsApp link not found
         alert("WhatsApp link not found in response.");
       }
     } catch (error) {
@@ -253,6 +274,7 @@ const Offers = () => {
               <option value="ON_HOLD">On Hold</option>
               <option value="ACCEPTED">Accepted</option>
               <option value="EXPIRED">Expired</option>
+          
             </select>
           </div>
         </div>
@@ -383,22 +405,9 @@ const Offers = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        {candidateData.offers.length > 1 && (
-                          <button
-                            onClick={() =>
-                              handleInitiateAndOpenWhatsApp(
-                                candidateData.candidate.name
-                              )
-                            }
-                            className="text-green-600 hover:text-green-800"
-                          >
-                            <MessageCircle className="h-5 w-5" />
-                          </button>
-                        )}
                         <button
                           onClick={() =>
-                            navigate(
-                              `/offers/${candidateData.candidate.id}/manage`
+                            navigate(navigationLinks.manageOffer.path.replace(":candidateId", candidateData.candidate.id)
                             )
                           }
                           className="text-primary-600 hover:text-primary-900 text-sm font-medium"
@@ -435,11 +444,18 @@ const Offers = () => {
                                     >
                                       {offer.status}
                                     </span>
+                                  </div> 
+                                  <div className="text-sm text-gray-500">
+                                   <span>Offered by: {offer.hr.name} at {offer.hr.company}</span>
                                   </div>
+                                  
+                                  
+
                                   <div className="flex items-center gap-4 text-sm text-gray-500">
                                     <span>
                                       {formatCurrency(offer.compensation.total)}
                                     </span>
+                              
                                     <span className="flex items-center gap-1">
                                       <Calendar className="h-4 w-4" />
                                       Valid till:{" "}
@@ -450,6 +466,21 @@ const Offers = () => {
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
+                        {candidateData.offers.length > 1 && offer.hr?.id !== loggedInHRId && (
+  <button
+    onClick={() =>
+      handleInitiateAndOpenWhatsApp(
+        candidateData.candidate.name,
+        candidateData.candidate.id,
+      )
+    }
+    className="text-green-600 hover:text-green-800"
+  >
+    <MessageCircle className="h-5 w-5" />
+  </button>
+)}
+
+                                  
                                   <button
                                     onClick={() => handleEditOffer(offer)}
                                     className="text-primary-600 hover:text-primary-900 text-sm font-medium"

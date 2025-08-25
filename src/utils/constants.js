@@ -19,6 +19,11 @@ export const navigationLinks = {
     name: "Candidate Check",
     path: "/candidate/check",
   },
+  manageOffer:{
+    name: "Manage Offer",
+    path: "/candidate/:candidateId",
+
+  },
   offers: {
     name: "Offers",
     path: "/offers",

@@ -11,17 +11,38 @@ import {
   ArrowUp,
   ArrowDown
 } from 'lucide-react'
-import { dashboardData } from '../data/sampleData'
+import { useGetPublicDashboardQuery, useGetHrDashboardQuery } from '../redux/api/dashboard.apiSlice'
 import { navigationLinks } from '../utils/constants'
 import { useSelector } from 'react-redux'
 
 const Dashboard = () => {
-  // Get user from Redux state
-  const user = useSelector((state) => state.auth.user)
-  const token = useSelector((state) => state.auth.token)
-  console.log("user", user);
-  console.log("token", token);
-  const { overview, whatsappMetrics, recentActivity } = dashboardData
+
+  // Detect login state (token in Redux or localStorage)
+  const token = useSelector((state) => state.auth.token) || localStorage.getItem('authToken');
+  const user = useSelector((state) => state.auth.user);
+
+  // Fetch correct dashboard data
+  const {
+    data: hrData,
+    isLoading: isHrLoading,
+    error: hrError
+  } = useGetHrDashboardQuery(undefined, { skip: !token });
+
+  const {
+    data: publicData,
+    isLoading: isPublicLoading,
+    error: publicError
+  } = useGetPublicDashboardQuery(undefined, { skip: !!token });
+
+  // Choose which data to use
+  const dashboardData = token ? hrData?.data : publicData?.data;
+  const isLoading = token ? isHrLoading : isPublicLoading;
+  const error = token ? hrError : publicError;
+
+  const overview = dashboardData?.overview || {};
+  const whatsappMetrics = dashboardData?.whatsappMetrics || {};
+  const trends = dashboardData?.trends || {};
+  const recentActivity = dashboardData?.recentActivity || [];
 
   // Function to get greeting based on time of day
   const getGreeting = () => {
@@ -51,40 +72,33 @@ const Dashboard = () => {
     return 'Your HR collaboration platform'
   }
 
+  // Stats (dynamically from API)
   const stats = [
     {
       name: 'Total Offers',
-      value: overview.totalOffers,
-      change: '+12%',
-      changeType: 'increase',
+      value: overview.totalOffers ?? '-',
       icon: FileText,
       color: 'blue'
     },
     {
       name: 'Active Offers',
-      value: overview.activeOffers,
-      change: '+4',
-      changeType: 'increase',
+      value: overview.activeOffers ?? '-',
       icon: Clock,
       color: 'yellow'
     },
     {
       name: 'Success Rate',
-      value: `${overview.successRate}%`,
-      change: '+8%',
-      changeType: 'increase',
+      value: overview.successRate !== undefined ? `${overview.successRate}%` : '-',
       icon: CheckCircle,
       color: 'green'
     },
     {
       name: 'WhatsApp Communications',
-      value: whatsappMetrics.totalCommunications,
-      change: '+6',
-      changeType: 'increase',
+      value: whatsappMetrics.totalCommunications ?? '-',
       icon: MessageCircle,
       color: 'green'
     }
-  ]
+  ];
 
   const quickActions = [
     {
@@ -92,7 +106,7 @@ const Dashboard = () => {
       description: 'Verify candidate duplicates',
       href: navigationLinks.candidateCheck.path,
       icon: Users,
-      color: 'bg-primary-600'
+      color: 'bg-blue-600'
     },
     {
       name: 'View Offers',
@@ -109,6 +123,14 @@ const Dashboard = () => {
       color: 'bg-whatsapp-500'
     }
   ]
+
+  if (isLoading) {
+    return <div className="p-8 text-center">Loading dashboard...</div>;
+  }
+  if (error) {
+    console.log(error);
+    return <div className="p-8 text-center text-red-600">Error loading dashboard: {error.data.error || 'Unknown error'}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -137,7 +159,7 @@ const Dashboard = () => {
                   <dt className="text-sm font-medium text-gray-500 truncate">{stat.name}</dt>
                   <dd className="flex items-baseline">
                     <div className="text-2xl font-semibold text-gray-900">{stat.value}</div>
-                    <div className={`ml-2 flex items-baseline text-sm font-semibold ${
+                    {/* <div className={`ml-2 flex items-baseline text-sm font-semibold ${
                       stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'
                     }`}>
                       {stat.changeType === 'increase' ? (
@@ -146,7 +168,7 @@ const Dashboard = () => {
                         <ArrowDown className="self-center flex-shrink-0 h-4 w-4" />
                       )}
                       <span className="ml-1">{stat.change}</span>
-                    </div>
+                    </div> */}
                   </dd>
                 </dl>
               </div>
@@ -186,21 +208,23 @@ const Dashboard = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-4">WhatsApp Collaboration</h3>
           <div className="space-y-4">
             <div className="flex justify-between">
+              <span className="text-sm text-gray-500">Total Communications</span>
+              <span className="text-sm font-medium text-gray-900">{whatsappMetrics.totalCommunications ?? '-'}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-sm text-gray-500">Response Rate</span>
-              <span className="text-sm font-medium text-gray-900">{whatsappMetrics.resolutionRate}%</span>
+              <span className="text-sm font-medium text-gray-900">{whatsappMetrics.resolutionRate ?? '-'}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-whatsapp-500 h-2 rounded-full" style={{ width: `${whatsappMetrics.resolutionRate}%` }}></div>
+              <div className="bg-whatsapp-500 h-2 rounded-full" style={{ width: `${whatsappMetrics.resolutionRate ?? 0}%` }}></div>
             </div>
-            
             <div className="flex justify-between">
               <span className="text-sm text-gray-500">Avg Response Time</span>
-              <span className="text-sm font-medium text-gray-900">{whatsappMetrics.averageResponseTime} min</span>
+              <span className="text-sm font-medium text-gray-900">{whatsappMetrics.averageResponseTime ?? '-'} min</span>
             </div>
-            
             <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Success Rate</span>
-              <span className="text-sm font-medium text-gray-900">{whatsappMetrics.collaborationSuccessRate}%</span>
+              <span className="text-sm text-gray-500">Collab Success Rate</span>
+              <span className="text-sm font-medium text-gray-900">{whatsappMetrics.collaborationSuccessRate ?? '-'}%</span>
             </div>
           </div>
         </div>
@@ -210,8 +234,9 @@ const Dashboard = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
           <div className="flow-root">
             <ul className="-mb-8">
+              {recentActivity.length === 0 && <li className="text-gray-500">No recent activity.</li>}
               {recentActivity.map((activity, activityIdx) => (
-                <li key={activity.message}>
+                <li key={activity.message + activity.timestamp}>
                   <div className="relative pb-8">
                     {activityIdx !== recentActivity.length - 1 ? (
                       <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true" />
@@ -233,7 +258,7 @@ const Dashboard = () => {
                           <p className="text-sm text-gray-500">{activity.message}</p>
                         </div>
                         <div className="text-right text-sm whitespace-nowrap text-gray-500">
-                          {new Date(activity.timestamp).toLocaleDateString()}
+                          {activity.timestamp ? new Date(activity.timestamp).toLocaleDateString() : ''}
                         </div>
                       </div>
                     </div>

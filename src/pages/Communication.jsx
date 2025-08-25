@@ -21,7 +21,8 @@ const Communications = () => {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [showOutcomeModal, setShowOutcomeModal] = useState(false);
-  const [selectedCommunication, setSelectedCommunication] = useState(null);
+  const [selectedCommunication, setSelectedCommunication] = useState(null);   
+  console.log("communi---------", selectedCommunication);    
 
   const {
     data: apiResponse = {},
@@ -86,7 +87,7 @@ const Communications = () => {
 
   const generateWhatsAppLink = (communication) => {
     const message = `Hi ${communication.otherParty.name}! Following up on our discussion about ${communication.candidate.name}.`;
-    return `https://wa.me/?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/${communication.otherParty.whatsapp}?text=${encodeURIComponent(message)}`;
   };
 
   const summaryStats = {
@@ -100,10 +101,32 @@ const Communications = () => {
     useUpdateCommunicationOutcomeMutation();
 
   const handleUpdateOutcome = async (outcomeData) => {
+    console.log(selectedCommunication, "-------------------------------------------------");
+    let payload = {
+      result: outcomeData.type,
+      description: outcomeData.description,
+      actions: outcomeData.actions || [],
+      offerUpdates: {}
+    };
+
+    if (outcomeData.type === "TIMELINE_AGREED") {
+      payload.offerUpdates = {
+        postponedOfferId: outcomeData.postponedOfferId,
+        newJoinDate: outcomeData.newJoinDate
+      };
+    } else if (outcomeData.type === "WITHDRAW_OFFER" || outcomeData.type === "CANDIDATE_WITHDREW") {
+      payload.result = "CANDIDATE_WITHDREW"; // normalize type
+      payload.actions = [];
+      payload.offerUpdates = {
+        withdrawnOfferId: outcomeData.withdrawnOfferId,
+        reason: outcomeData.reason
+      };
+    }
+
     try {
       await updateOutcome({
         communicationId: selectedCommunication.id,
-        outcomeData,
+        outcomeData: payload,
       }).unwrap();
 
       setShowOutcomeModal(false);
@@ -233,7 +256,6 @@ const Communications = () => {
                     {communication.role}
                   </span>
                 </div>
-
                 <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
                   <span>
                     {communication.role === "INITIATOR" ? "To" : "From"}:{" "}
@@ -241,15 +263,23 @@ const Communications = () => {
                   </span>
                   <span>{communication.otherParty.company}</span>
                 </div>
-
-                {communication.outcome?.description && (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-md mb-3">
-                    <h4 className="text-sm font-medium text-green-900">
-                      Outcome
-                    </h4>
-                    <p className="text-sm text-green-800">
-                      {communication.outcome.description}
-                    </p>
+                 {communication.outcome&& (
+                  <div className="mb-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                    <h4 className="text-sm font-medium text-green-900 mb-1">Resolution Outcome</h4>
+                    <p className="text-sm text-green-800">{communication.outcome.description}</p>
+                    {communication.outcome.actions && communication.outcome.actions.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs font-medium text-green-900 mb-1">Agreed Actions:</p>
+                        <ul className="text-xs text-green-800 space-y-1">
+                          {communication.outcome.actions.map((action, index) => (
+                            <li key={index} className="flex items-start gap-1">
+                              <span className="text-green-600">•</span>
+                              {action}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
 
