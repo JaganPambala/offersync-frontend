@@ -12,6 +12,7 @@ import NotFound from "../pages/notFound"; // create this page
 import OfferCreate from "../pages/OfferCreate";
 import CompetitiveOfferCreate from '../pages/CompetitiveOfferCreate';
 import ManageOffersPage from "../pages/ManageOffer";  
+import MyProfile from "../pages/MyProfile"; // Add this import
 
 // Layouts
 import MainLayout from "../layout/mainLayout";
@@ -47,9 +48,10 @@ const router = createBrowserRouter([
     children: [
       { path: navigationLinks.candidateCheck.path, element: <CandidateCheck /> },
       { path: navigationLinks.offers.path, element: <Offers /> },
-          { path: navigationLinks.offerCreate.path, element: <OfferCreate /> },
+      { path: navigationLinks.offerCreate.path, element: <OfferCreate /> },
       { path: navigationLinks.communications.path, element: <Communications /> },
-      {path:navigationLinks.manageOffer.path, element:<ManageOffersPage/>}
+      { path: navigationLinks.manageOffer.path, element: <ManageOffersPage /> },
+      { path: navigationLinks.myProfile.path, element: <MyProfile /> } // Add this route
     ]
   },
 

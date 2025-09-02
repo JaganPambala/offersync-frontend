@@ -11,6 +11,10 @@ export const navigationLinks = {
     name: "Register",
     path: "/auth/register",
   },
+  myProfile: {
+    name: "My Profile",
+    path: "auth/myProfile",
+  },
   dashboard: {
     name: "Dashboard",
     path: "/",
@@ -42,4 +46,4 @@ export const navigationLinks = {
   },
 };
 
-export const API_URL = "http://localhost:3000/api";
+export const API_URL = "http://localhost:4001/api";

@@ -77,7 +77,7 @@ const OfferEditModal = ({ offer, isOpen, onClose, onUpdate }) => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, status: e.target.value }))
               }
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               {statusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -102,7 +102,7 @@ const OfferEditModal = ({ offer, isOpen, onClose, onUpdate }) => {
                     validTill: e.target.value,
                   }))
                 }
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <Calendar className="absolute right-3 top-2 h-5 w-5 text-gray-400" />
             </div>
@@ -123,7 +123,7 @@ const OfferEditModal = ({ offer, isOpen, onClose, onUpdate }) => {
                     followUpDate: e.target.value,
                   }))
                 }
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <Calendar className="absolute right-3 top-2 h-5 w-5 text-gray-400" />
             </div>

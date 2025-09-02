@@ -1,30 +1,33 @@
-import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { setFormField, resetForm } from '../redux/slices/offerSlice';
-import { useCreateCompetitiveOfferMutation } from '../redux/api/offerApiSlice';
+import React from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { setFormField, resetForm } from "../redux/slices/offerSlice";
+import { useCreateCompetitiveOfferMutation } from "../redux/api/offerApiSlice";
 
 const CompetitiveOfferCreate = () => {
   const { id: candidateId } = useParams(); // Get candidateId from URL
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const formData = useSelector((state) => state.offer.formData);
-  const [createCompetitiveOffer, { isLoading }] = useCreateCompetitiveOfferMutation();
+  const [createCompetitiveOffer, { isLoading }] =
+    useCreateCompetitiveOfferMutation();
 
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;
     let finalValue;
 
-    if (type === 'number') {
-      finalValue = value === '' ? '' : Number(value);
+    if (type === "number") {
+      finalValue = value === "" ? "" : Number(value);
     } else {
       finalValue = value;
     }
 
-    dispatch(setFormField({
-      field: name,
-      value: finalValue
-    }));
+    dispatch(
+      setFormField({
+        field: name,
+        value: finalValue,
+      })
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -33,32 +36,32 @@ const CompetitiveOfferCreate = () => {
       const offerData = {
         position: {
           title: formData.positionTitle,
-          level: formData.positionLevel
+          level: formData.positionLevel,
         },
         compensation: {
           base: Number(formData.baseCompensation),
           variable: Number(formData.variableCompensation),
           stocks: Number(formData.stocksCompensation),
           bonus: Number(formData.bonusCompensation),
-          currency: formData.compensationCurrency || 'INR'
+          currency: formData.compensationCurrency || "INR",
         },
         timeline: {
           validTill: formData.validTill,
           expectedJoinDate: formData.expectedJoinDate,
-          followUpDate: formData.followUpDate
+          followUpDate: formData.followUpDate,
         },
-        priority: formData.priority || 'HIGH',
+        priority: formData.priority || "HIGH",
       };
 
       await createCompetitiveOffer({
         candidateId,
-        data: offerData
+        data: offerData,
       }).unwrap();
 
       dispatch(resetForm());
-      navigate('/offers'); // Navigate back to offers list after success
+      navigate("/offers"); // Navigate back to offers list after success
     } catch (error) {
-      console.error('Failed to create competitive offer:', error);
+      console.error("Failed to create competitive offer:", error);
       // Handle error appropriately
     }
   };
@@ -66,7 +69,9 @@ const CompetitiveOfferCreate = () => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Create Competitive Offer</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Create Competitive Offer
+        </h1>
         <p className="mt-1 text-sm text-gray-500">
           Create a competitive offer based on market conditions
         </p>
@@ -85,10 +90,10 @@ const CompetitiveOfferCreate = () => {
               <input
                 type="text"
                 name="positionTitle"
-                value={formData.positionTitle || ''}
+                value={formData.positionTitle || ""}
                 onChange={handleInputChange}
                 required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
             <div>
@@ -97,9 +102,9 @@ const CompetitiveOfferCreate = () => {
               </label>
               <select
                 name="positionLevel"
-                value={formData.positionLevel || 'Mid'}
+                value={formData.positionLevel || "Mid"}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               >
                 <option value="Junior">Junior</option>
                 <option value="Mid">Mid</option>
@@ -124,11 +129,11 @@ const CompetitiveOfferCreate = () => {
               <input
                 type="number"
                 name="baseCompensation"
-                value={formData.baseCompensation || ''}
+                value={formData.baseCompensation || ""}
                 onChange={handleInputChange}
                 required
                 min="0"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
             <div>
@@ -138,10 +143,10 @@ const CompetitiveOfferCreate = () => {
               <input
                 type="number"
                 name="variableCompensation"
-                value={formData.variableCompensation || ''}
+                value={formData.variableCompensation || ""}
                 onChange={handleInputChange}
                 min="0"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
             <div>
@@ -151,10 +156,10 @@ const CompetitiveOfferCreate = () => {
               <input
                 type="number"
                 name="stocksCompensation"
-                value={formData.stocksCompensation || ''}
+                value={formData.stocksCompensation || ""}
                 onChange={handleInputChange}
                 min="0"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
             <div>
@@ -164,10 +169,10 @@ const CompetitiveOfferCreate = () => {
               <input
                 type="number"
                 name="bonusCompensation"
-                value={formData.bonusCompensation || ''}
+                value={formData.bonusCompensation || ""}
                 onChange={handleInputChange}
                 min="0"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
           </div>
@@ -185,10 +190,10 @@ const CompetitiveOfferCreate = () => {
               <input
                 type="date"
                 name="validTill"
-                value={formData.validTill || ''}
+                value={formData.validTill || ""}
                 onChange={handleInputChange}
                 required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
             <div>
@@ -198,9 +203,9 @@ const CompetitiveOfferCreate = () => {
               <input
                 type="date"
                 name="expectedJoinDate"
-                value={formData.expectedJoinDate || ''}
+                value={formData.expectedJoinDate || ""}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
             <div>
@@ -210,9 +215,9 @@ const CompetitiveOfferCreate = () => {
               <input
                 type="date"
                 name="followUpDate"
-                value={formData.followUpDate || ''}
+                value={formData.followUpDate || ""}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
             <div>
@@ -221,9 +226,9 @@ const CompetitiveOfferCreate = () => {
               </label>
               <select
                 name="priority"
-                value={formData.priority || 'HIGH'}
+                value={formData.priority || "HIGH"}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               >
                 <option value="HIGH">High</option>
                 <option value="MEDIUM">Medium</option>
@@ -242,12 +247,8 @@ const CompetitiveOfferCreate = () => {
           >
             Cancel
           </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="btn-primary"
-          >
-            {isLoading ? 'Creating...' : 'Create Competitive Offer'}
+          <button type="submit" disabled={isLoading} className="btn-blue">
+            {isLoading ? "Creating..." : "Create Competitive Offer"}
           </button>
         </div>
       </form>
@@ -255,4 +256,4 @@ const CompetitiveOfferCreate = () => {
   );
 };
 
-export default CompetitiveOfferCreate; 
+export default CompetitiveOfferCreate;

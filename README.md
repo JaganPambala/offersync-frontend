@@ -59,7 +59,7 @@ OfferSync features a **professional, dashboard-first interface** designed specif
 ### Color Palette
 
 ```css
-Primary: Blue (#0ea5e9, #0284c7, #0369a1)
+blue: Blue (#0ea5e9, #0284c7, #0369a1)
 Success: Green (#22c55e, #16a34a)
 Warning: Yellow (#f59e0b, #d97706)
 Error: Red (#ef4444, #dc2626)
@@ -71,7 +71,7 @@ Neutral: Gray (#f9fafb to #111827)
 
 #### Buttons
 
-- **Primary**: Blue gradient, white text
+- **blue**: Blue gradient, white text
 - **Secondary**: Gray background, dark text
 - **WhatsApp**: Green theme with WhatsApp icon
 - **Outline**: Border-only style for secondary actions

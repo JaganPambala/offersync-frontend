@@ -70,9 +70,14 @@ export const offerApi = createApi({
       invalidatesTags: ["Offers"],
     }),
     getAllOffers: builder.query({
-      query: () => ({
-        url: "/offers",
-        method: "GET",
+      query: (params) => ({
+        url: '/offers',
+        params: {
+          page: params?.page || 1,
+          limit: params?.limit || 10,
+          status: params?.status !== 'ALL' ? params?.status : undefined,
+          search: params?.search || undefined,
+        },
       }),
       transformResponse: (response) => {
         console.log("Raw API response:", response);

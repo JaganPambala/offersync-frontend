@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Menu, Bell, LogOut, User, Settings, LogIn } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { logout } from '../../redux/slices/authSlice'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { currentUser, notificationsData } from '../../data/sampleData'
 import { navigationLinks } from '../../utils/constants'
 
@@ -52,7 +52,7 @@ const Navbar = ({ setSidebarOpen }) => {
   return (
     <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow">
       <button
-        className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 md:hidden"
+        className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 md:hidden"
         onClick={() => setSidebarOpen(true)}
       >
         <Menu className="h-6 w-6" />
@@ -74,7 +74,7 @@ const Navbar = ({ setSidebarOpen }) => {
           {user && (
             <div className="relative">
               <button
-                className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-Blue-500"
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
               >
                 <Bell className="h-6 w-6" />
@@ -111,14 +111,14 @@ const Navbar = ({ setSidebarOpen }) => {
             {!user && (
               <button
                 onClick={handleLogin}
-                className="inline-flex items-center px-3 py-1.5 border border-primary-500 text-sm font-medium rounded-md text-primary-600 bg-white hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                className="inline-flex items-center px-3 py-1.5 border border-blue-500 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-Blue-500"
               >
                 <LogIn className="h-4 w-4 mr-1" />
                 Login
               </button>
             )}
             <button
-              className="flex items-center max-w-xs bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              className="flex items-center max-w-xs bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-Blue-500"
               onClick={() => user && setProfileOpen(!profileOpen)}
             >
               {user ? (
@@ -152,23 +152,23 @@ const Navbar = ({ setSidebarOpen }) => {
                   </div>
                   
                   {/* Dropdown Items */}
-                  <a
-                    href="/profile"
+                  <Link
+                    to={navigationLinks.myProfile.path}
                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
                   >
                     <User className="mr-3 h-4 w-4" />
-                    Profile
-                  </a>
+                    {navigationLinks.myProfile.name}
+                  </Link>
                   
-                  <a
-                    href="/settings"
+                  <Link
+                    to="/settings"
                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
                   >
                     <Settings className="mr-3 h-4 w-4" />
                     Settings
-                  </a>
+                  </Link>
                   
                   <button
                     onClick={handleLogout}

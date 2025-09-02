@@ -18,28 +18,23 @@ import {
 import UpdateOutcomeModal from "../components/common/UpdateOutcomeModal";
 
 const Communications = () => {
+  // 1. Move ALL hooks to the top
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [showOutcomeModal, setShowOutcomeModal] = useState(false);
   const [selectedCommunication, setSelectedCommunication] = useState(null);
-  console.log("communi---------", selectedCommunication);
 
+  // 2. API hooks
   const {
     data: apiResponse = {},
     isLoading,
     error,
   } = useGetCommunicationsQuery();
 
-  const communications = apiResponse.success ? apiResponse.data : [];
+  const [updateOutcome, { isLoading: isUpdating }] =
+    useUpdateCommunicationOutcomeMutation();
 
-  const filteredCommunications = communications.filter((comm) => {
-    const matchesStatus =
-      statusFilter === "ALL" || comm.status === statusFilter;
-    const matchesRole = roleFilter === "ALL" || comm.role === roleFilter;
-    return matchesStatus && matchesRole;
-  });
-
-  // Display label mapping
+  // 3. All your existing helper functions
   const getDisplayStatus = (status) => {
     if (status === "INITIATED") return "ACTIVE";
     return status;
@@ -92,21 +87,7 @@ const Communications = () => {
     }?text=${encodeURIComponent(message)}`;
   };
 
-  const summaryStats = {
-    total: communications.length,
-    active: communications.filter((c) => c.status === "INITIATED").length,
-    resolved: communications.filter((c) => c.status === "RESOLVED").length,
-    averageResponseTime: 35, // Stub for now
-  };
-
-  const [updateOutcome, { isLoading: isUpdating }] =
-    useUpdateCommunicationOutcomeMutation();
-
   const handleUpdateOutcome = async (outcomeData) => {
-    console.log(
-      selectedCommunication,
-      "-------------------------------------------------"
-    );
     let payload = {
       result: outcomeData.type,
       description: outcomeData.description,
@@ -144,9 +125,47 @@ const Communications = () => {
     }
   };
 
-  if (isLoading) return <div>Loading communications...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  // 4. Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
+  // 5. Error state
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <AlertTriangle className="mx-auto h-12 w-12 text-red-400" />
+        <h3 className="mt-2 text-lg font-medium text-red-900">
+          Error loading communications
+        </h3>
+        <p className="mt-1 text-sm text-red-500">
+          Something went wrong. Please try again.
+        </p>
+      </div>
+    );
+  }
+
+  // 6. Process data
+  const communications = apiResponse.success ? apiResponse.data : [];
+  const filteredCommunications = communications.filter((comm) => {
+    const matchesStatus =
+      statusFilter === "ALL" || comm.status === statusFilter;
+    const matchesRole = roleFilter === "ALL" || comm.role === roleFilter;
+    return matchesStatus && matchesRole;
+  });
+
+  const summaryStats = {
+    total: communications.length,
+    active: communications.filter((c) => c.status === "INITIATED").length,
+    resolved: communications.filter((c) => c.status === "RESOLVED").length,
+    averageResponseTime: 35,
+  };
+
+  // 7. Keep ALL your existing JSX exactly as it was
   return (
     <div className="space-y-6">
       <div className="md:flex md:items-center md:justify-between">
@@ -206,7 +225,7 @@ const Communications = () => {
 
         <div className="card p-5">
           <div className="flex items-center">
-            <TrendingUp className="h-8 w-8 text-primary-600" />
+            <TrendingUp className="h-8 w-8 text-blue-600" />
             <div className="ml-5">
               <p className="text-sm text-gray-500">Avg Response</p>
               <p className="text-lg font-medium text-gray-900">
@@ -335,7 +354,7 @@ const Communications = () => {
                 </a>
                 {communication.status === "INITIATED" && (
                   <button
-                    className="btn-primary text-sm"
+                    className="btn-blue text-sm"
                     onClick={() => {
                       setSelectedCommunication(communication);
                       setShowOutcomeModal(true);

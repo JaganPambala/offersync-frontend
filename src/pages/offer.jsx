@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FileText,
   Search,
@@ -19,6 +19,7 @@ import { navigationLinks } from "../utils/constants.js";
 import OfferEditModal from "../components/common/OfferEditModal";
 import { useCreateCommunicationMutation } from "../redux/api/communicationApiSlice.js";
 import { getCandidateCommunication } from "../utils/communicationdetils.js";
+import Pagination from "../components/common/Pagination";
 
 const Offers = () => {
   const navigate = useNavigate();
@@ -27,8 +28,24 @@ const Offers = () => {
   const [expandedCandidates, setExpandedCandidates] = useState({});
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [createCommunication] = useCreateCommunicationMutation();
+  const [currentPage, setCurrentPage] = useState(1); // Starting from page 1
+  const [pageSize] = useState(3); // Changed from 10 to 3
 
-  const { data: response, isLoading, isError } = useGetAllOffersQuery();
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchTerm]);
+
+  const {
+    data: response,
+    isLoading,
+    isError,
+  } = useGetAllOffersQuery({
+    page: currentPage,
+    limit: pageSize,
+    status: statusFilter,
+    search: searchTerm,
+  });
 
   const [updateOffer] = useUpdateOfferMutation();
 
@@ -238,7 +255,7 @@ const Offers = () => {
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
-          <button className="btn-primary" onClick={handleCreateOffer}>
+          <button className="btn-blue" onClick={handleCreateOffer}>
             <FileText className="h-4 w-4 mr-2" />
             Create Offer
           </button>
@@ -256,7 +273,7 @@ const Offers = () => {
                 placeholder="Search candidates..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                className="pl-10 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>
           </div>
@@ -265,7 +282,7 @@ const Offers = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="block border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+              className="block border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             >
               <option value="ALL">All Status</option>
               <option value="ACTIVE">Active</option>
@@ -413,7 +430,7 @@ const Offers = () => {
                               )
                             )
                           }
-                          className="text-primary-600 hover:text-primary-900 text-sm font-medium"
+                          className="text-blue-600 hover:text-blue-900 text-sm font-medium"
                         >
                           Manage Offers
                         </button>
@@ -513,7 +530,7 @@ const Offers = () => {
 
                                     <button
                                       onClick={() => handleEditOffer(offer)}
-                                      className="text-primary-600 hover:text-primary-900 text-sm font-medium"
+                                      className="text-blue-600 hover:text-blue-900 text-sm font-medium"
                                       disabled={editDisabled}
                                       title={editTooltip || "Edit Offer"}
                                     >
@@ -533,7 +550,67 @@ const Offers = () => {
             </tbody>
           </table>
         </div>
+
+        {isLoading ? (
+          <div className="px-6 py-4 border-t border-gray-200">
+            <div className="flex justify-center items-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-sm text-gray-500">Loading...</span>
+            </div>
+          </div>
+        ) : isError ? (
+          <div className="px-6 py-4 border-t border-gray-200">
+            <div className="flex justify-center items-center text-red-500">
+              <AlertTriangle className="h-5 w-5 mr-2" />
+              <span>Error loading data. Please try again.</span>
+            </div>
+          </div>
+        ) : (
+          response?.pagination && (
+            <Pagination
+              currentPage={response.pagination.page}
+              totalPages={response.pagination.pages}
+              totalItems={response.pagination.total}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              hasNextPage={response.pagination.hasNextPage}
+              hasPreviousPage={response.pagination.hasPreviousPage}
+            />
+          )
+        )}
       </div>
+
+      {/* Initial loading state */}
+      {isLoading && !response && (
+        <div className="card p-6">
+          <div className="flex justify-center items-center min-h-[200px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-500">Loading offers...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error state */}
+      {isError && (
+        <div className="card p-6">
+          <div className="text-center">
+            <AlertTriangle className="mx-auto h-12 w-12 text-red-400" />
+            <h3 className="mt-2 text-lg font-medium text-red-900">
+              Error Loading Offers
+            </h3>
+            <p className="mt-1 text-sm text-red-500">
+              There was a problem loading the offers. Please try refreshing the
+              page.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      )}
 
       {filteredCandidates.length === 0 && (
         <div className="text-center py-12">
