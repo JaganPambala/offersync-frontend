@@ -51,7 +51,7 @@ const router = createBrowserRouter([
       { path: navigationLinks.offerCreate.path, element: <OfferCreate /> },
       { path: navigationLinks.communications.path, element: <Communications /> },
       { path: navigationLinks.manageOffer.path, element: <ManageOffersPage /> },
-      { path: navigationLinks.myProfile.path, element: <MyProfile /> } // Add this route
+      { path: navigationLinks.myProfile.path, element: <MyProfile /> } 
     ]
   },
 

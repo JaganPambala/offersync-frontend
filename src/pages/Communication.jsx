@@ -104,7 +104,7 @@ const Communications = () => {
       outcomeData.type === "WITHDRAW_OFFER" ||
       outcomeData.type === "CANDIDATE_WITHDREW"
     ) {
-      payload.result = "CANDIDATE_WITHDREW"; // normalize type
+      payload.result = "CANDIDATE_WITHDREW"; 
       payload.actions = [];
       payload.offerUpdates = {
         withdrawnOfferId: outcomeData.withdrawnOfferId,
@@ -136,6 +136,7 @@ const Communications = () => {
 
   // 5. Error state
   if (error) {
+    console.log("API Error:", error);
     return (
       <div className="text-center py-12">
         <AlertTriangle className="mx-auto h-12 w-12 text-red-400" />
@@ -143,7 +144,7 @@ const Communications = () => {
           Error loading communications
         </h3>
         <p className="mt-1 text-sm text-red-500">
-          Something went wrong. Please try again.
+          {error?.data?.message || "An unexpected error occurred."}
         </p>
       </div>
     );

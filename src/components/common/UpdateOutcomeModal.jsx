@@ -97,7 +97,7 @@ communication, onClose, onSubmit
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
-          <div className="text-center py-10 text-red-500">Failed to load offer details.</div>
+          <div className="text-center py-10 text-red-500">{isError?.data?.message || "An unexpected error occurred."}</div>
         </div>
       </div>
     );

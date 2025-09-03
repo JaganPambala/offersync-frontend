@@ -235,9 +235,10 @@ const Offers = () => {
   };
 
   if (isError) {
+    console.log(isError);
     return (
       <div className="text-center text-red-500 p-4">
-        Error loading offers. Please try again later.
+      {isError?.data?.message || "An error occurred while fetching offers."}
       </div>
     );
   }
@@ -384,7 +385,7 @@ const Offers = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCandidates.map((candidateData) => (
+              {candidatesData.map((candidateData) => (
                 <React.Fragment key={candidateData.candidate.id}>
                   {/* Main Candidate Row */}
                   <tr className="hover:bg-gray-50">

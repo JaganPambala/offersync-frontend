@@ -333,7 +333,7 @@ const OfferCreate = () => {
   ];
 
   const renderField = (field) => {
-    const value = formData[field.name] ?? ""; // Use nullish coalescing to default to empty string
+    const value = formData[field.name] ?? ""; 
 
     if (field.type === "select") {
       return (
@@ -381,6 +381,8 @@ const OfferCreate = () => {
         maxLength={field.maxLength}
         placeholder={field.placeholder}
         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+        
+    
       />
     );
   };
@@ -420,7 +422,7 @@ const OfferCreate = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Current Step Fields */}
+     
         <div className="card p-6">
           <h2 className="text-lg font-semibold mb-4">
             {formSteps[activeStep].title}
