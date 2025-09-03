@@ -182,7 +182,7 @@ const CandidateCheck = () => {
         placeholder={placeholder}
         className={`mt-1 block w-full border ${
           errors[id] ? "border-red-300" : "border-gray-300"
-        } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+        } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2`}
       />
       <FormError error={touched[id] && errors[id]} />
     </div>
@@ -329,7 +329,7 @@ const CandidateCheck = () => {
               {/* Existing Offers */}
               <div className="card p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Existing Offers ({candidateData.metrics.totalOffers})
+                  Existing Offers ({candidateData.existingOffers.length})
                 </h3>
                 <div className="space-y-4">
                   {candidateData.existingOffers.map((offer) => (

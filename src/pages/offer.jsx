@@ -40,6 +40,7 @@ const Offers = () => {
     data: response,
     isLoading,
     isError,
+    error,
   } = useGetAllOffersQuery({
     page: currentPage,
     limit: pageSize,
@@ -235,10 +236,10 @@ const Offers = () => {
   };
 
   if (isError) {
-    console.log(isError);
+    console.log("Error fetching offers:", error);
     return (
       <div className="text-center text-red-500 p-4">
-      {isError?.data?.message || "An error occurred while fetching offers."}
+        {error?.data?.error || "An error occurred while fetching offers."}
       </div>
     );
   }

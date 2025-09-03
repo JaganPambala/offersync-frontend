@@ -104,7 +104,7 @@ const Communications = () => {
       outcomeData.type === "WITHDRAW_OFFER" ||
       outcomeData.type === "CANDIDATE_WITHDREW"
     ) {
-      payload.result = "CANDIDATE_WITHDREW"; 
+      payload.result = "CANDIDATE_WITHDREW";
       payload.actions = [];
       payload.offerUpdates = {
         withdrawnOfferId: outcomeData.withdrawnOfferId,
@@ -144,7 +144,7 @@ const Communications = () => {
           Error loading communications
         </h3>
         <p className="mt-1 text-sm text-red-500">
-          {error?.data?.message || "An unexpected error occurred."}
+          {error?.data?.error || "An unexpected error occurred."}
         </p>
       </div>
     );
@@ -398,5 +398,4 @@ const Communications = () => {
     </div>
   );
 };
-
 export default Communications;
